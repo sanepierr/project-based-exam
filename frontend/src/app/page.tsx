@@ -42,7 +42,7 @@ export default function HomePage() {
 
   return (
     <div className="relative">
-      <HeroSection movies={trending} />
+      <HeroSection movies={trending} loading={loading} />
 
       <div className="relative z-10 -mt-28 space-y-20 pb-24">
 

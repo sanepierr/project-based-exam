@@ -9,11 +9,12 @@ import type { MovieCompact } from "@/types/movie";
 
 interface HeroSectionProps {
   movies: MovieCompact[];
+  loading?: boolean;
 }
 
 const SLIDE_DURATION = 3000; 
 
-export default function HeroSection({ movies }: HeroSectionProps) {
+export default function HeroSection({ movies, loading = false }: HeroSectionProps) {
   const [activeIndex, setActiveIndex] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
   const [progressKey, setProgressKey] = useState(0);
