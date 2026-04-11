@@ -39,6 +39,7 @@ function MoodContent() {
 
   useEffect(() => {
     if (!activeMood) return;
+    // Cancellation flag prevents state updates on unmounted component
     let cancelled = false;
     (async () => {
       setLoading(true);
