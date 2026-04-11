@@ -173,6 +173,12 @@ function SearchContent() {
     setFilterRuntimeMax("");
     setFilterLanguage("");
     setFilterSort("popularity.desc");
+    setFiltersOpen(false);
+    if (initialQuery) {
+      performSearch(initialQuery, 1);
+      return;
+    }
+    loadCategory(sortParam || "trending", 1);
   }
 
   function handleSubmit(e: React.FormEvent) {
