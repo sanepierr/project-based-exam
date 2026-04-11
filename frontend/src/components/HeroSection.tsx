@@ -199,11 +199,18 @@ export default function HeroSection({ movies, loading = false }: HeroSectionProp
       </button>
 
       {/* Slide indicators */}
-      <div className="absolute bottom-20 left-6 md:left-10 lg:left-20 z-20 flex items-center gap-2">
+      <div
+        className="absolute bottom-20 left-6 md:left-10 lg:left-20 z-20 flex items-center gap-2"
+        role="group"
+        aria-label="Featured movies"
+      >
         {heroMovies.map((m, i) => (
           <button
+            type="button"
             key={m.id || m.tmdb_id}
             onClick={() => goTo(i)}
+            aria-label={`Go to slide ${i + 1}: ${m.title}`}
+            aria-current={i === activeIndex ? "true" : undefined}
             className="group relative"
           >
             <div className={`h-[3px] rounded-full transition-all duration-300 ${
@@ -222,7 +229,11 @@ export default function HeroSection({ movies, loading = false }: HeroSectionProp
             </div>
           </button>
         ))}
-        <span className="ml-3 text-[11px] text-white/20 font-mono tabular-nums">
+        <span
+          className="ml-3 text-[11px] text-white/20 font-mono tabular-nums"
+          aria-live="polite"
+          aria-atomic="true"
+        >
           {String(activeIndex + 1).padStart(2, "0")} / {String(heroMovies.length).padStart(2, "0")}
         </span>
       </div>
