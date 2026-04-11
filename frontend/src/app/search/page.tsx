@@ -3,6 +3,36 @@
 import { Suspense } from "react";
 import { Search, Loader2 } from "lucide-react";
 
+const SORT_OPTIONS = [
+  { value: "popularity.desc", label: "Most Popular" },
+  { value: "vote_average.desc", label: "Highest Rated" },
+  { value: "primary_release_date.desc", label: "Newest First" },
+  { value: "primary_release_date.asc", label: "Oldest First" },
+  { value: "revenue.desc", label: "Highest Revenue" },
+];
+
+const LANGUAGES = [
+  { value: "", label: "Any Language" },
+  { value: "en", label: "English" },
+  { value: "fr", label: "French" },
+  { value: "es", label: "Spanish" },
+  { value: "de", label: "German" },
+  { value: "ja", label: "Japanese" },
+  { value: "ko", label: "Korean" },
+  { value: "hi", label: "Hindi" },
+  { value: "zh", label: "Chinese" },
+  { value: "it", label: "Italian" },
+];
+
+const GENRE_LIST = [
+  { id: 28, name: "Action" }, { id: 12, name: "Adventure" }, { id: 16, name: "Animation" },
+  { id: 35, name: "Comedy" }, { id: 80, name: "Crime" }, { id: 99, name: "Documentary" },
+  { id: 18, name: "Drama" }, { id: 14, name: "Fantasy" }, { id: 27, name: "Horror" },
+  { id: 10749, name: "Romance" }, { id: 878, name: "Sci-Fi" }, { id: 53, name: "Thriller" },
+  { id: 10402, name: "Music" }, { id: 36, name: "History" }, { id: 10752, name: "War" },
+  { id: 10751, name: "Family" }, { id: 9648, name: "Mystery" }, { id: 37, name: "Western" },
+];
+
 function SearchContent() {
   return (
     <div className="pt-24 pb-20 px-6 md:px-10 lg:px-20 max-w-[1440px] mx-auto">
