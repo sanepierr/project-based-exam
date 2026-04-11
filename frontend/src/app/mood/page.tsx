@@ -50,6 +50,7 @@ function MoodContent() {
       setMoodInfo(data.mood);
       setTotalPages(data.total_pages || 1);
       setPage(p);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     } catch (err: any) {
       console.error(err);
       setError(err.message || 'Failed to fetch movies matching this mood. Please try again.');
