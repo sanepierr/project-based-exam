@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, Suspense } from "react";
-import { useSearchParams } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Search, SlidersHorizontal, X, Loader2, ChevronDown } from "lucide-react";
 import MovieCard, { MovieCardSkeleton } from "@/components/MovieCard";
 import { moviesAPI } from "@/lib/api";
@@ -38,6 +38,8 @@ const GENRE_LIST = [
 ];
 
 function SearchContent() {
+  const router = useRouter();
+  const pathname = usePathname();
   const searchParams = useSearchParams();
   const initialQuery = searchParams.get("q") || "";
   const sortParam = searchParams.get("sort") || "";
@@ -61,6 +63,16 @@ function SearchContent() {
   const [filterSort, setFilterSort] = useState("popularity.desc");
 
   const hasActiveFilters = !!(filterGenre || filterYearFrom || filterYearTo || filterRating || filterRuntimeMin || filterRuntimeMax || filterLanguage);
+
+  function updateQueryParam(nextQuery: string) {
+    const params = new URLSearchParams(searchParams.toString());
+    if (nextQuery) {
+      params.set("q", nextQuery);
+    } else {
+      params.delete("q");
+    }
+    router.replace(`${pathname}?${params.toString()}`);
+  }
 
   useEffect(() => {
     if (initialQuery) {
@@ -147,9 +159,9 @@ function SearchContent() {
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (query.trim()) {
-      performSearch(query, 1);
-    }
+    const trimmedQuery = query.trim();
+    if (!trimmedQuery) return;
+    updateQueryParam(trimmedQuery);
   }
 
   function handlePageChange(newPage: number) {
