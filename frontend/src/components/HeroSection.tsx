@@ -182,16 +182,20 @@ export default function HeroSection({ movies, loading = false }: HeroSectionProp
 
       {/* Navigation arrows  */}
       <button
+        type="button"
         onClick={goPrev}
+        aria-label="Previous featured movie"
         className="absolute left-4 md:left-8 top-1/2 -translate-y-1/2 z-20 w-11 h-11 rounded-full glass flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity duration-300 group"
       >
-        <ChevronLeft className="w-5 h-5 text-white/60 group-hover:text-gold transition-colors" />
+        <ChevronLeft className="w-5 h-5 text-white/60 group-hover:text-gold transition-colors" aria-hidden />
       </button>
       <button
+        type="button"
         onClick={goNext}
+        aria-label="Next featured movie"
         className="absolute right-4 md:right-8 top-1/2 -translate-y-1/2 z-20 w-11 h-11 rounded-full glass flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity duration-300 group"
       >
-        <ChevronRight className="w-5 h-5 text-white/60 group-hover:text-gold transition-colors" />
+        <ChevronRight className="w-5 h-5 text-white/60 group-hover:text-gold transition-colors" aria-hidden />
       </button>
 
       {/* Slide indicators */}
