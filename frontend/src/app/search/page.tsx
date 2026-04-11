@@ -359,14 +359,16 @@ function SearchContent() {
           <div className="flex items-center gap-3 pt-3 border-t border-white/[0.04]">
             <button
               onClick={() => applyFilters(1)}
-              className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-gold to-gold-dim text-surface-0 font-semibold text-sm hover:shadow-lg hover:shadow-gold/15 transition-all"
+              disabled={loading}
+              className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-gold to-gold-dim text-surface-0 font-semibold text-sm hover:shadow-lg hover:shadow-gold/15 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Apply Filters
             </button>
             {hasActiveFilters && (
               <button
                 onClick={clearFilters}
-                className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl glass text-sm text-white/50 hover:text-white transition-colors"
+                disabled={loading}
+                className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl glass text-sm text-white/50 hover:text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <X className="w-3.5 h-3.5" />
                 Clear all
