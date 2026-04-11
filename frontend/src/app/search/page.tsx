@@ -115,6 +115,7 @@ function SearchContent() {
       }
       setResults(data.results);
       setTotalPages(data.total_pages || 1);
+      setTotalResults(data.total_results || data.results.length || 0);
       setPage(p);
     } catch (err) {
       console.error(err);
