@@ -96,7 +96,7 @@ function MoodContent() {
             <button
               key={mood.slug}
               onClick={() => router.push(`/mood?mood=${mood.slug}`)}
-              className={`genre-card glass-card group relative overflow-hidden rounded-xl p-5 text-center transition-all duration-300 ${
+              className={`genre-card glass-card group relative overflow-hidden rounded-xl p-5 text-center transition-all duration-300 hover:scale-105 ${
                 isActive ? "ring-2 ring-gold/40 scale-[1.03]" : ""
               }`}
             >
