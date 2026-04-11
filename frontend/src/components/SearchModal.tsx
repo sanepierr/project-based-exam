@@ -8,6 +8,14 @@ import { moviesAPI } from "@/lib/api";
 import { posterUrl } from "@/lib/utils";
 import type { MovieCompact } from "@/types/movie";
 
+const SEARCH_HINTS = [
+  "Inception",
+  "Parasite",
+  "Spider-Man",
+  "Hayao Miyazaki",
+  "Studio Ghibli",
+];
+
 interface SearchModalProps {
   open: boolean;
   onClose: () => void;
@@ -223,6 +231,9 @@ export default function SearchModal({ open, onClose }: SearchModalProps) {
               <p className="text-sm text-white/25">
                 No movies found for &ldquo;{query}&rdquo;
               </p>
+              <p className="text-xs text-white/20 mt-1">
+                Try a title, cast member, or franchise keyword
+              </p>
             </div>
           )}
 
@@ -233,17 +244,15 @@ export default function SearchModal({ open, onClose }: SearchModalProps) {
                 Try searching for
               </p>
               <div className="flex flex-wrap gap-2 px-3">
-                {["Inception", "Christopher Nolan", "Sci-Fi", "The Godfather", "Studio Ghibli"].map(
-                  (hint) => (
-                    <button
-                      key={hint}
-                      onClick={() => setQuery(hint)}
-                      className="px-3 py-1.5 rounded-lg bg-white/[0.03] border border-white/[0.06] text-[12px] text-white/40 hover:text-white/60 hover:border-gold/15 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-gold/40 transition-all"
-                    >
-                      {hint}
-                    </button>
-                  )
-                )}
+                {SEARCH_HINTS.map((hint) => (
+                  <button
+                    key={hint}
+                    onClick={() => setQuery(hint)}
+                    className="px-3 py-1.5 rounded-lg bg-white/[0.03] border border-white/[0.06] text-[12px] text-white/40 hover:text-white/60 hover:border-gold/15 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-gold/40 transition-all"
+                  >
+                    {hint}
+                  </button>
+                ))}
               </div>
             </div>
           )}
