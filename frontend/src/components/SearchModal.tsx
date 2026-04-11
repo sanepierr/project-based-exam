@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
-import { Search, X, Loader2, Star } from "lucide-react";
+import { Search, Loader2, Star } from "lucide-react";
 import { moviesAPI } from "@/lib/api";
 import { posterUrl } from "@/lib/utils";
 import type { MovieCompact } from "@/types/movie";
@@ -19,7 +19,6 @@ export default function SearchModal({ open, onClose }: SearchModalProps) {
   const [loading, setLoading] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(-1);
   const inputRef = useRef<HTMLInputElement>(null);
-  const searchRequestRef = useRef(0);
   const router = useRouter();
 
   useEffect(() => {
@@ -37,7 +36,9 @@ export default function SearchModal({ open, onClose }: SearchModalProps) {
     const handler = (e: KeyboardEvent) => {
       if (e.key === "k" && (e.metaKey || e.ctrlKey)) {
         e.preventDefault();
-        if (open) onClose();
+        if (open) {
+          onClose();
+        }
       }
       if (e.key === "Escape" && open) onClose();
     };
@@ -48,35 +49,22 @@ export default function SearchModal({ open, onClose }: SearchModalProps) {
   // Debounced search
   useEffect(() => {
     if (query.length < 2) {
-      searchRequestRef.current += 1;
-      setLoading(false);
       setResults([]);
       return;
     }
     const timer = setTimeout(async () => {
-      const requestId = ++searchRequestRef.current;
       setLoading(true);
       try {
         const data = await moviesAPI.search(query);
-        if (requestId === searchRequestRef.current) {
-          setResults(data.results.slice(0, 6));
-        }
+        setResults(data.results.slice(0, 6));
       } catch {
-        if (requestId === searchRequestRef.current) {
-          setResults([]);
-        }
+        setResults([]);
       } finally {
-        if (requestId === searchRequestRef.current) {
-          setLoading(false);
-        }
+        setLoading(false);
       }
     }, 250);
     return () => clearTimeout(timer);
   }, [query]);
-
-  useEffect(() => {
-    setSelectedIndex(-1);
-  }, [results]);
 
   // Keyboard nav in results
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -88,9 +76,7 @@ export default function SearchModal({ open, onClose }: SearchModalProps) {
       setSelectedIndex((i) => Math.max(i - 1, -1));
     } else if (e.key === "Enter" && selectedIndex >= 0) {
       e.preventDefault();
-      const selectedMovie = results[selectedIndex];
-      if (!selectedMovie) return;
-      handleSelect(selectedMovie.tmdb_id || selectedMovie.id);
+      handleSelect(results[selectedIndex].tmdb_id || results[selectedIndex].id);
     }
   };
 
@@ -142,12 +128,14 @@ export default function SearchModal({ open, onClose }: SearchModalProps) {
                 setSelectedIndex(-1);
               }}
               placeholder="Search movies, directors, actors..."
+              aria-label="Search movies, directors, and actors"
               className="flex-1 bg-transparent text-white placeholder:text-white/25 outline-none text-lg font-body"
             />
             {loading && <Loader2 className="w-5 h-5 text-gold/40 animate-spin" />}
             <button
               type="button"
               onClick={onClose}
+              aria-label="Close search modal"
               className="text-[10px] text-white/20 px-2 py-1 rounded border border-white/8 font-mono hover:border-white/15 transition-colors"
             >
               ESC
@@ -161,7 +149,7 @@ export default function SearchModal({ open, onClose }: SearchModalProps) {
 
           {/* Results */}
           {results.length > 0 && (
-            <div className="max-h-[45vh] overflow-y-auto p-2">
+            <div className="max-h-[45vh] overflow-y-auto p-2" role="listbox" aria-label="Search results">
               <p className="text-[10px] uppercase tracking-wider text-white/20 px-3 py-2 font-semibold">
                 Movies
               </p>
@@ -169,6 +157,8 @@ export default function SearchModal({ open, onClose }: SearchModalProps) {
                 <button
                   key={movie.id || movie.tmdb_id}
                   onClick={() => handleSelect(movie.tmdb_id || movie.id)}
+                  role="option"
+                  aria-selected={i === selectedIndex}
                   className={`w-full flex items-center gap-4 p-3 rounded-xl transition-all text-left ${
                     i === selectedIndex
                       ? "bg-gold/10 border border-gold/15"
@@ -226,11 +216,8 @@ export default function SearchModal({ open, onClose }: SearchModalProps) {
           {/* Empty state */}
           {query.length < 2 && (
             <div className="p-4 pb-5">
-              <p className="text-[11px] text-white/30 px-3 pb-1">
-                Type at least 2 characters to start searching.
-              </p>
               <p className="text-[10px] uppercase tracking-wider text-white/20 px-3 py-2 font-semibold">
-                Try searching for movies, people, or genres
+                Try searching for
               </p>
               <div className="flex flex-wrap gap-2 px-3">
                 {["Inception", "Christopher Nolan", "Sci-Fi", "The Godfather", "Studio Ghibli"].map(
