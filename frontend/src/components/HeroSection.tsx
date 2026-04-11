@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, type FocusEvent } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { Play, Info, Star, ChevronLeft, ChevronRight } from "lucide-react";
@@ -17,6 +17,7 @@ const SLIDE_DURATION = 3000;
 export default function HeroSection({ movies, loading = false }: HeroSectionProps) {
   const [activeIndex, setActiveIndex] = useState(0);
   const [hoverPaused, setHoverPaused] = useState(false);
+  const [focusWithin, setFocusWithin] = useState(false);
   const [reducedMotion, setReducedMotion] = useState(false);
   const [progressKey, setProgressKey] = useState(0);
 
@@ -48,10 +49,11 @@ export default function HeroSection({ movies, loading = false }: HeroSectionProp
 
   // Auto-advance
   useEffect(() => {
-    if (hoverPaused || reducedMotion || heroMovies.length <= 1) return;
+    if (hoverPaused || focusWithin || reducedMotion || heroMovies.length <= 1)
+      return;
     const timer = setInterval(goNext, SLIDE_DURATION);
     return () => clearInterval(timer);
-  }, [goNext, hoverPaused, reducedMotion, heroMovies.length]);
+  }, [goNext, hoverPaused, focusWithin, reducedMotion, heroMovies.length]);
 
   if (loading && !heroMovies.length) {
     return (
@@ -99,6 +101,12 @@ export default function HeroSection({ movies, loading = false }: HeroSectionProp
       className="relative h-[92vh] overflow-hidden"
       onMouseEnter={() => setHoverPaused(true)}
       onMouseLeave={() => setHoverPaused(false)}
+      onFocusCapture={() => setFocusWithin(true)}
+      onBlurCapture={(e: FocusEvent<HTMLDivElement>) => {
+        if (!e.currentTarget.contains(e.relatedTarget as Node | null)) {
+          setFocusWithin(false);
+        }
+      }}
     >
       {heroMovies.map((m, i) => {
         const bg = backdropUrl((m as any).backdrop_url || m.poster_url);
@@ -232,7 +240,9 @@ export default function HeroSection({ movies, loading = false }: HeroSectionProp
                   style={{
                     animationDuration: `${SLIDE_DURATION}ms`,
                     animationPlayState:
-                      hoverPaused || reducedMotion ? "paused" : "running",
+                      hoverPaused || focusWithin || reducedMotion
+                        ? "paused"
+                        : "running",
                   }}
                 />
               )}
