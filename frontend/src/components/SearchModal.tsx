@@ -64,6 +64,10 @@ export default function SearchModal({ open, onClose }: SearchModalProps) {
     return () => clearTimeout(timer);
   }, [query]);
 
+  useEffect(() => {
+    setSelectedIndex(-1);
+  }, [results]);
+
   // Keyboard nav in results
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "ArrowDown") {
