@@ -240,6 +240,14 @@ function SearchContent() {
     : hasActiveFilters
     ? "Filtered Results"
     : categoryLabels[sortParam] || "Trending Movies";
+  const emptyStateTitle = hasActiveFilters
+    ? "No movies matched these filters"
+    : initialQuery
+    ? `No movies found for "${initialQuery}"`
+    : "No movies found";
+  const emptyStateHint = hasActiveFilters
+    ? "Try broadening your year, rating, or runtime filters"
+    : "Try adjusting your filters or search term";
 
   return (
     <div className="pt-24 pb-20 px-6 md:px-10 lg:px-20 max-w-[1440px] mx-auto">
@@ -465,8 +473,8 @@ function SearchContent() {
           <div className="w-16 h-16 rounded-2xl glass-card flex items-center justify-center mx-auto mb-5">
             <Search className="w-7 h-7 text-white/15" />
           </div>
-          <p className="text-lg text-white/25 mb-2">No movies found</p>
-          <p className="text-sm text-white/15">Try adjusting your filters or search term</p>
+          <p className="text-lg text-white/25 mb-2">{emptyStateTitle}</p>
+          <p className="text-sm text-white/15">{emptyStateHint}</p>
         </div>
       )}
     </div>
