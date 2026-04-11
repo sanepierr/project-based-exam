@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, Suspense } from "react";
+import { useState, useEffect, useRef, Suspense } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Search, SlidersHorizontal, X, Loader2, ChevronDown } from "lucide-react";
 import MovieCard, { MovieCardSkeleton } from "@/components/MovieCard";
@@ -55,6 +55,7 @@ function SearchContent() {
   const [totalPages, setTotalPages] = useState(1);
   const [totalResults, setTotalResults] = useState(0);
   const [filtersOpen, setFiltersOpen] = useState(false);
+  const requestIdRef = useRef(0);
 
   // Filter state
   const [filterGenre, setFilterGenre] = useState("");
@@ -78,6 +79,15 @@ function SearchContent() {
   function normalizeTotalPages(total: number | undefined) {
     if (!total || Number.isNaN(total)) return 1;
     return Math.min(Math.max(total, 1), MAX_PAGES);
+  }
+
+  function startRequest() {
+    requestIdRef.current += 1;
+    return requestIdRef.current;
+  }
+
+  function isActiveRequest(requestId: number) {
+    return requestIdRef.current === requestId;
   }
 
   function updateQueryParam(nextQuery: string) {
@@ -106,21 +116,27 @@ function SearchContent() {
 
   async function performSearch(q: string, p: number) {
     if (!q.trim()) return;
+    const requestId = startRequest();
     setLoading(true);
     try {
       const data = await moviesAPI.search(q, p);
+      if (!isActiveRequest(requestId)) return;
       setResults(data.results);
       setTotalPages(normalizeTotalPages(data.total_pages));
       setTotalResults(data.total_results || 0);
       setPage(p);
     } catch (err) {
+      if (!isActiveRequest(requestId)) return;
       console.error(err);
     } finally {
-      setLoading(false);
+      if (isActiveRequest(requestId)) {
+        setLoading(false);
+      }
     }
   }
 
   async function loadCategory(cat: string, p: number) {
+    const requestId = startRequest();
     setLoading(true);
     try {
       let data;
@@ -129,14 +145,18 @@ function SearchContent() {
         case "top_rated": data = await moviesAPI.topRated(p); break;
         default: data = await moviesAPI.trending("week", p);
       }
+      if (!isActiveRequest(requestId)) return;
       setResults(data.results);
       setTotalPages(normalizeTotalPages(data.total_pages));
       setTotalResults(data.total_results || data.results.length || 0);
       setPage(p);
     } catch (err) {
+      if (!isActiveRequest(requestId)) return;
       console.error(err);
     } finally {
-      setLoading(false);
+      if (isActiveRequest(requestId)) {
+        setLoading(false);
+      }
     }
   }
 
@@ -156,17 +176,22 @@ function SearchContent() {
       return params;
     }
 
+    const requestId = startRequest();
     setLoading(true);
     try {
       const data = await moviesAPI.discover(buildDiscoverParams(p));
+      if (!isActiveRequest(requestId)) return;
       setResults(data.results);
       setTotalPages(normalizeTotalPages(data.total_pages));
       setTotalResults(data.total_results || 0);
       setPage(p);
     } catch (err) {
+      if (!isActiveRequest(requestId)) return;
       console.error(err);
     } finally {
-      setLoading(false);
+      if (isActiveRequest(requestId)) {
+        setLoading(false);
+      }
     }
   }
 
