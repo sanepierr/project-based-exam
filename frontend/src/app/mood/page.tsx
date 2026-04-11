@@ -32,6 +32,7 @@ function MoodContent() {
   const [movies, setMovies] = useState<MovieCompact[]>([]);
   const [moodInfo, setMoodInfo] = useState<any>(null);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
 
@@ -48,8 +49,9 @@ function MoodContent() {
       setMoodInfo(data.mood);
       setTotalPages(data.total_pages || 1);
       setPage(p);
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
+      setError(err.message || 'Failed to fetch movies matching this mood. Please try again.');
     } finally {
       setLoading(false);
     }
