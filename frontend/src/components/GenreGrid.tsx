@@ -1,5 +1,6 @@
 "use client";
 
+import { useMemo, useState } from "react";
 import Link from "next/link";
 import {
   Swords,
@@ -20,7 +21,7 @@ import {
   Users,
 } from "lucide-react";
 
-const GENRES = [
+export const GENRES = [
   { id: 28, name: "Action", slug: "action", icon: Swords, gradient: "from-red-500/10 to-orange-500/10", iconColor: "text-red-400" },
   { id: 12, name: "Adventure", slug: "adventure", icon: Mountain, gradient: "from-emerald-500/10 to-teal-500/10", iconColor: "text-emerald-400" },
   { id: 16, name: "Animation", slug: "animation", icon: Palette, gradient: "from-violet-500/10 to-pink-500/10", iconColor: "text-violet-400" },
@@ -40,14 +41,44 @@ const GENRES = [
 ];
 
 export default function GenreGrid() {
+  const [query, setQuery] = useState("");
+
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return GENRES;
+    return GENRES.filter(
+      (g) =>
+        g.name.toLowerCase().includes(q) ||
+        g.slug.toLowerCase().includes(q)
+    );
+  }, [query]);
+
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-8 gap-3">
-      {GENRES.map((genre, i) => {
+    <div className="space-y-4">
+      <label className="block max-w-md">
+        <span className="sr-only">Filter genres by name</span>
+        <input
+          type="search"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="Filter genres…"
+          autoComplete="off"
+          className="w-full px-4 py-2.5 rounded-xl bg-white/[0.04] border border-white/[0.08] text-sm text-white placeholder:text-white/25 outline-none focus:border-gold/25 focus:ring-1 focus:ring-gold/20"
+        />
+      </label>
+
+      <div
+        className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-8 gap-3"
+        role="navigation"
+        aria-label="Movie genres"
+      >
+      {filtered.map((genre, i) => {
         const Icon = genre.icon;
         return (
           <Link
             key={genre.id}
             href={`/genre/${genre.slug}?id=${genre.id}`}
+            aria-label={`Browse ${genre.name} movies`}
             className={`genre-card glass-card group relative overflow-hidden rounded-xl p-4 flex flex-col items-center text-center gap-3 animate-slide-up stagger-${Math.min(i % 6 + 1, 6)}`}
           >
             <div className={`absolute inset-0 bg-gradient-to-br ${genre.gradient} opacity-0 group-hover:opacity-100 transition-opacity duration-500`} />
@@ -66,6 +97,13 @@ export default function GenreGrid() {
           </Link>
         );
       })}
+      </div>
+
+      {query.trim() && filtered.length === 0 && (
+        <p className="text-sm text-white/35 text-center py-6">
+          No genres match &ldquo;{query.trim()}&rdquo;. Clear the filter to see all.
+        </p>
+      )}
     </div>
   );
 }
