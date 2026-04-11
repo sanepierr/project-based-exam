@@ -3,6 +3,7 @@
 import { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { Search, Loader2 } from "lucide-react";
+import MovieCard, { MovieCardSkeleton } from "@/components/MovieCard";
 import { moviesAPI } from "@/lib/api";
 import type { MovieCompact } from "@/types/movie";
 
@@ -100,6 +101,14 @@ function SearchContent() {
     }
   }
 
+  function handlePageChange(newPage: number) {
+    if (initialQuery) {
+      performSearch(initialQuery, newPage);
+    } else {
+      loadCategory(sortParam || "trending", newPage);
+    }
+  }
+
   const categoryLabels: Record<string, string> = {
     trending:    "Trending Movies",
     now_playing: "Now Playing",
@@ -135,19 +144,43 @@ function SearchContent() {
         )}
       </div>
 
-      {/* Results or empty state */}
+      {/* Grid */}
       {loading ? (
-        <div className="flex justify-center py-24">
-          <Loader2 className="w-8 h-8 animate-spin text-gold/40" />
-        </div>
-      ) : results.length > 0 ? (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-5">
-          {results.map((movie) => (
-            <div key={movie.id || movie.tmdb_id} className="text-white/50 text-sm p-3 glass-card rounded-xl">
-              {movie.title}
-            </div>
+          {Array.from({ length: 18 }).map((_, i) => (
+            <MovieCardSkeleton key={i} />
           ))}
         </div>
+      ) : results.length > 0 ? (
+        <>
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-5">
+            {results.map((movie, i) => (
+              <MovieCard key={movie.id || movie.tmdb_id} movie={movie} showOverview index={i} />
+            ))}
+          </div>
+
+          {totalPages > 1 && (
+            <div className="flex items-center justify-center gap-3 mt-12">
+              <button
+                onClick={() => handlePageChange(page - 1)}
+                disabled={page <= 1}
+                className="px-5 py-2.5 rounded-xl glass-card text-sm font-medium disabled:opacity-20 hover:border-gold/15 transition-all"
+              >
+                Previous
+              </button>
+              <span className="text-sm text-white/30 font-mono tabular-nums px-4">
+                {page} / {Math.min(totalPages, 500)}
+              </span>
+              <button
+                onClick={() => handlePageChange(page + 1)}
+                disabled={page >= totalPages}
+                className="px-5 py-2.5 rounded-xl glass-card text-sm font-medium disabled:opacity-20 hover:border-gold/15 transition-all"
+              >
+                Next
+              </button>
+            </div>
+          )}
+        </>
       ) : (
         <div className="text-center py-24">
           <div className="w-16 h-16 rounded-2xl glass-card flex items-center justify-center mx-auto mb-5">
