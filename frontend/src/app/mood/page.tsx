@@ -109,7 +109,10 @@ function MoodContent() {
           {moodInfo && (
             <div className="flex items-center justify-between mb-8">
               <div>
-                <h2 className="text-2xl font-bold font-display">{moodInfo.label}</h2>
+                <div className="flex items-center gap-4">
+                  <h2 className="text-2xl font-bold font-display">{moodInfo.label}</h2>
+                  <button onClick={() => router.push('/mood')} className="text-xs px-3 py-1.5 rounded-lg border border-white/10 hover:bg-white/5 transition-colors text-white/40">Clear</button>
+                </div>
                 <p className="text-sm text-white/30 mt-0.5">{moodInfo.description}</p>
               </div>
             </div>
