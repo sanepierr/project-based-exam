@@ -125,11 +125,10 @@ function SearchContent() {
   }
 
   async function applyFilters(p: number = 1) {
-    setLoading(true);
-    try {
+    function buildDiscoverParams(pageNumber: number) {
       const params: Record<string, string | number> = {
         sort: filterSort,
-        page: p,
+        page: pageNumber,
       };
       if (filterGenre) params.genre = filterGenre;
       if (filterYearFrom) params.year_from = filterYearFrom;
@@ -138,8 +137,12 @@ function SearchContent() {
       if (filterRuntimeMin) params.runtime_min = filterRuntimeMin;
       if (filterRuntimeMax) params.runtime_max = filterRuntimeMax;
       if (filterLanguage) params.language = filterLanguage;
+      return params;
+    }
 
-      const data = await moviesAPI.discover(params);
+    setLoading(true);
+    try {
+      const data = await moviesAPI.discover(buildDiscoverParams(p));
       setResults(data.results);
       setTotalPages(data.total_pages || 1);
       setTotalResults(data.total_results || 0);
