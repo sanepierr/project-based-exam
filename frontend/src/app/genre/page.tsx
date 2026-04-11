@@ -34,10 +34,11 @@ export default function GenresPage() {
           {copied ? "Copied" : "Copy link to genres"}
         </button>
       </div>
-      <p className="text-white/50 mb-10 max-w-xl">
-        Explore movies by genre. Find your next favorite film from action blockbusters
-        to indie dramas and everything in between.
+      <p className="text-white/50 mb-6 max-w-xl">
+        Explore movies by genre. Genre pages support shareable links with sort and page in the URL
+        so you can bookmark or send a list to friends.
       </p>
+      <p className="text-xs text-white/25 mb-10 font-mono">17 genres · TMDB-powered</p>
       <GenreGrid />
     </div>
   );
