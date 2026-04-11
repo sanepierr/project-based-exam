@@ -2,8 +2,8 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { Star, Clock, Play, Heart, Bookmark, TrendingUp, ArrowRight } from "lucide-react";
-import { posterUrl, formatRuntime, ratingColor, cn, formatCurrency } from "@/lib/utils";
+import { Star, Clock, Play } from "lucide-react";
+import { posterUrl, formatRuntime, ratingColor } from "@/lib/utils";
 import type { MovieCompact } from "@/types/movie";
 
 interface MovieCardProps {
