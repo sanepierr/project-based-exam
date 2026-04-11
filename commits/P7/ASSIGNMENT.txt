@@ -1,0 +1,12 @@
+Person P7 — Mood (“Share & URL pagination” slice)
+
+changes.patch — vs baseline 0538998 for mood/page.tsx. Regenerate: commits/REGENERATE_P_PATCHES.md.
+
+Commit target: at least 20 commits, branch + PR to main.
+
+Shipped / reference: ?mood= & ?page= in URL, copy mood link.
+
+Follow-up: keyboard, errors, prefetch, reduced-motion, tooltips.
+
+Allowed path:
+  frontend/src/app/mood/page.tsx

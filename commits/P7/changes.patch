@@ -1,0 +1,151 @@
+diff --git a/frontend/src/app/mood/page.tsx b/frontend/src/app/mood/page.tsx
+index d11915e..76ea5e4 100644
+--- a/frontend/src/app/mood/page.tsx
++++ b/frontend/src/app/mood/page.tsx
+@@ -4,8 +4,8 @@ import { useState, useEffect, Suspense } from "react";
+ import { useSearchParams, useRouter } from "next/navigation";
+ import Link from "next/link";
+ import {
+-  Sparkles, Heart, Zap, Flame, Brain, Smile, Ghost,
+-  Mountain, Baby, BookOpen, ArrowLeft, Loader2,
++  Sparkles, Heart, Zap, Brain, Smile, Ghost,
++  Mountain, Baby, BookOpen, Loader2, Link2, Check,
+ } from "lucide-react";
+ import MovieCard, { MovieCardSkeleton } from "@/components/MovieCard";
+ import { moviesAPI } from "@/lib/api";
+@@ -28,32 +28,49 @@ function MoodContent() {
+   const searchParams = useSearchParams();
+   const router = useRouter();
+   const activeMood = searchParams.get("mood") || "";
++  const page = Math.max(1, Number.parseInt(searchParams.get("page") || "1", 10) || 1);
+ 
+   const [movies, setMovies] = useState<MovieCompact[]>([]);
+   const [moodInfo, setMoodInfo] = useState<any>(null);
+   const [loading, setLoading] = useState(false);
+-  const [page, setPage] = useState(1);
+   const [totalPages, setTotalPages] = useState(1);
++  const [copied, setCopied] = useState(false);
++  const [loadError, setLoadError] = useState(false);
+ 
+   useEffect(() => {
+     if (!activeMood) return;
+-    fetchMoodMovies(activeMood, 1);
+-  }, [activeMood]);
++    let cancelled = false;
++    (async () => {
++      setLoading(true);
++      setLoadError(false);
++      try {
++        const data = await moviesAPI.getMoodMovies(activeMood, page);
++        if (cancelled) return;
++        setMovies(data.results || []);
++        setMoodInfo(data.mood);
++        setTotalPages(data.total_pages || 1);
++      } catch (err) {
++        console.error(err);
++        if (!cancelled) {
++          setLoadError(true);
++          setMovies([]);
++          setMoodInfo(null);
++          setTotalPages(1);
++        }
++      } finally {
++        if (!cancelled) setLoading(false);
++      }
++    })();
++    return () => {
++      cancelled = true;
++    };
++  }, [activeMood, page]);
+ 
+-  async function fetchMoodMovies(slug: string, p: number) {
+-    setLoading(true);
+-    try {
+-      const data = await moviesAPI.getMoodMovies(slug, p);
+-      setMovies(data.results || []);
+-      setMoodInfo(data.mood);
+-      setTotalPages(data.total_pages || 1);
+-      setPage(p);
+-    } catch (err) {
+-      console.error(err);
+-    } finally {
+-      setLoading(false);
+-    }
+-  }
++  const setMoodPage = (p: number) => {
++    router.replace(`/mood?mood=${encodeURIComponent(activeMood)}&page=${p}`, {
++      scroll: false,
++    });
++  };
+ 
+   return (
+     <div className="pt-24 pb-20 px-6 md:px-10 lg:px-20 max-w-[1440px] mx-auto">
+@@ -81,7 +98,7 @@ function MoodContent() {
+           return (
+             <button
+               key={mood.slug}
+-              onClick={() => router.push(`/mood?mood=${mood.slug}`)}
++              onClick={() => router.push(`/mood?mood=${mood.slug}&page=1`)}
+               className={`genre-card glass-card group relative overflow-hidden rounded-xl p-5 text-center transition-all duration-300 ${
+                 isActive ? "ring-2 ring-gold/40 scale-[1.03]" : ""
+               }`}
+@@ -102,12 +119,40 @@ function MoodContent() {
+       {/* Results */}
+       {activeMood && (
+         <div>
++          {loadError && (
++            <div className="mb-8 rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-100/90 text-center max-w-xl mx-auto">
++              Could not load movies for this mood. Try again or pick a different mood.
++            </div>
++          )}
+           {moodInfo && (
+-            <div className="flex items-center justify-between mb-8">
++            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-8">
+               <div>
+                 <h2 className="text-2xl font-bold font-display">{moodInfo.label}</h2>
+                 <p className="text-sm text-white/30 mt-0.5">{moodInfo.description}</p>
++                <p className="text-[11px] text-white/20 mt-2 font-mono">
++                  Shareable URL includes mood and page
++                </p>
+               </div>
++              <button
++                type="button"
++                onClick={async () => {
++                  try {
++                    await navigator.clipboard.writeText(window.location.href);
++                    setCopied(true);
++                    setTimeout(() => setCopied(false), 2000);
++                  } catch {
++                    /* ignore */
++                  }
++                }}
++                className="inline-flex items-center gap-2 h-10 px-4 rounded-xl glass-card text-xs font-medium text-white/70 hover:text-white self-start"
++              >
++                {copied ? (
++                  <Check className="w-3.5 h-3.5 text-emerald-400" />
++                ) : (
++                  <Link2 className="w-3.5 h-3.5" />
++                )}
++                {copied ? "Copied" : "Copy mood link"}
++              </button>
+             </div>
+           )}
+ 
+@@ -128,7 +173,7 @@ function MoodContent() {
+               {totalPages > 1 && (
+                 <div className="flex items-center justify-center gap-3 mt-12">
+                   <button
+-                    onClick={() => fetchMoodMovies(activeMood, page - 1)}
++                    onClick={() => setMoodPage(page - 1)}
+                     disabled={page <= 1}
+                     className="px-5 py-2.5 rounded-xl glass-card text-sm font-medium disabled:opacity-20"
+                   >
+@@ -136,7 +181,7 @@ function MoodContent() {
+                   </button>
+                   <span className="text-sm text-white/30 font-mono px-4">{page} / {Math.min(totalPages, 500)}</span>
+                   <button
+-                    onClick={() => fetchMoodMovies(activeMood, page + 1)}
++                    onClick={() => setMoodPage(page + 1)}
+                     disabled={page >= totalPages}
+                     className="px-5 py-2.5 rounded-xl glass-card text-sm font-medium disabled:opacity-20"
+                   >
