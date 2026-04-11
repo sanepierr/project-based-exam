@@ -98,6 +98,8 @@ export default function HeroSection({ movies, loading = false }: HeroSectionProp
 
   return (
     <div
+      role="region"
+      aria-label="Featured trending movies"
       className="relative h-[92vh] overflow-hidden"
       onMouseEnter={() => setHoverPaused(true)}
       onMouseLeave={() => setHoverPaused(false)}
