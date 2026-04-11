@@ -17,12 +17,20 @@ const SORT_OPTIONS = [
 function GenreContent() {
   const params = useParams();
   const searchParams = useSearchParams();
+  const router = useRouter();
   const slug = params.slug as string;
   const genreId = searchParams.get("id");
 
+  const sortParam = searchParams.get("sort") || "popularity.desc";
+  const sort = SORT_OPTIONS.some((o) => o.value === sortParam)
+    ? sortParam
+    : "popularity.desc";
+
+  const initialPage = Math.max(1, Number.parseInt(searchParams.get("page") || "1", 10) || 1);
+
   const [movies, setMovies] = useState<MovieCompact[]>([]);
   const [loading, setLoading] = useState(true);
-  const [page, setPage] = useState(1);
+  const [page, setPage] = useState(initialPage);
   const [totalPages, setTotalPages] = useState(1);
 
   const genreName = slug
