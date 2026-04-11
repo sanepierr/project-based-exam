@@ -222,6 +222,7 @@ function SearchContent() {
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search movies, directors, actors..."
+            aria-label="Search for movies, directors, or actors"
             className="w-full h-14 pr-5 rounded-2xl bg-surface-2 border border-white/[0.08] text-white placeholder:text-white/25 outline-none focus:border-gold/40 focus:ring-1 focus:ring-gold/20 transition-all text-lg font-body"
             style={{ paddingLeft: "3.25rem" }}
           />
@@ -232,6 +233,8 @@ function SearchContent() {
       <div className="flex items-center justify-center mb-8">
         <button
           onClick={() => setFiltersOpen(!filtersOpen)}
+          aria-expanded={filtersOpen}
+          aria-controls="advanced-search-filters"
           className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-medium transition-all ${
             filtersOpen || hasActiveFilters
               ? "bg-gold/15 border border-gold/25 text-gold"
@@ -249,7 +252,7 @@ function SearchContent() {
 
       {/* Filters panel */}
       {filtersOpen && (
-        <div className="glass-card rounded-2xl p-6 mb-10 animate-slide-up">
+        <div id="advanced-search-filters" className="glass-card rounded-2xl p-6 mb-10 animate-slide-up">
           <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-gold/15 to-transparent" />
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-5">
