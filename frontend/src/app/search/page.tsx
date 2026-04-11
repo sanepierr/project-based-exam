@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, Suspense } from "react";
+import { useState, useEffect, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import { Search, Loader2 } from "lucide-react";
 import { moviesAPI } from "@/lib/api";
 import type { MovieCompact } from "@/types/movie";
@@ -36,12 +37,26 @@ const GENRE_LIST = [
 ];
 
 function SearchContent() {
-  const [query, setQuery] = useState("");
+  const searchParams = useSearchParams();
+  const initialQuery = searchParams.get("q") || "";
+  const sortParam   = searchParams.get("sort") || "";
+
+  const [query, setQuery] = useState(initialQuery);
   const [results, setResults] = useState<MovieCompact[]>([]);
   const [loading, setLoading] = useState(false);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalResults, setTotalResults] = useState(0);
+
+  useEffect(() => {
+    if (initialQuery) {
+      performSearch(initialQuery, 1);
+    } else if (sortParam) {
+      loadCategory(sortParam, 1);
+    } else {
+      loadCategory("trending", 1);
+    }
+  }, [initialQuery, sortParam]);
 
   async function performSearch(q: string, p: number) {
     if (!q.trim()) return;
@@ -85,6 +100,16 @@ function SearchContent() {
     }
   }
 
+  const categoryLabels: Record<string, string> = {
+    trending:    "Trending Movies",
+    now_playing: "Now Playing",
+    top_rated:   "Top Rated",
+  };
+
+  const pageTitle = initialQuery
+    ? `Results for "${initialQuery}"`
+    : categoryLabels[sortParam] || "Trending Movies";
+
   return (
     <div className="pt-24 pb-20 px-6 md:px-10 lg:px-20 max-w-[1440px] mx-auto">
       {/* Search bar */}
@@ -104,7 +129,7 @@ function SearchContent() {
 
       {/* Title + count */}
       <div className="flex items-center justify-between mb-8">
-        <h1 className="text-3xl font-bold font-display">Trending Movies</h1>
+        <h1 className="text-3xl font-bold font-display">{pageTitle}</h1>
         {totalResults > 0 && (
           <span className="text-sm text-white/30">{totalResults.toLocaleString()} results</span>
         )}
@@ -129,7 +154,7 @@ function SearchContent() {
             <Search className="w-7 h-7 text-white/15" />
           </div>
           <p className="text-lg text-white/25 mb-2">No movies found</p>
-          <p className="text-sm text-white/15">Try searching for something</p>
+          <p className="text-sm text-white/15">Try adjusting your search term</p>
         </div>
       )}
     </div>
