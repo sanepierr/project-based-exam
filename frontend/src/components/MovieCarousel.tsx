@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef } from "react";
+import { useId, useRef } from "react";
 import Link from "next/link";
 import { ChevronLeft, ChevronRight, ArrowRight } from "lucide-react";
 import MovieCard, { MovieCardSkeleton } from "@/components/MovieCard";
@@ -23,6 +23,7 @@ export default function MovieCarousel({
   loading = false,
   href,
 }: MovieCarouselProps) {
+  const headingId = useId();
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const scroll = (direction: "left" | "right") => {
@@ -33,7 +34,7 @@ export default function MovieCarousel({
   };
 
   return (
-    <section className="relative">
+    <section className="relative" aria-labelledby={headingId}>
       {/* Header */}
       <div className="flex items-end justify-between px-6 md:px-10 lg:px-20 mb-6">
         <div className="flex items-center gap-4">
@@ -43,7 +44,10 @@ export default function MovieCarousel({
             </div>
           )}
           <div>
-            <h2 className="text-xl md:text-2xl font-bold font-display text-white/95">
+            <h2
+              id={headingId}
+              className="text-xl md:text-2xl font-bold font-display text-white/95"
+            >
               {title}
             </h2>
             {subtitle && (
@@ -85,17 +89,26 @@ export default function MovieCarousel({
           ref={scrollRef}
           className="scroll-x flex gap-4 px-6 md:px-10 lg:px-20 pb-4"
         >
-          {loading
-            ? Array.from({ length: 8 }).map((_, i) => (
-                <MovieCardSkeleton key={i} />
-              ))
-            : movies.map((movie, i) => (
-                <MovieCard
-                  key={movie.id || movie.tmdb_id}
-                  movie={movie}
-                  index={i}
-                />
-              ))}
+          {loading ? (
+            Array.from({ length: 8 }).map((_, i) => (
+              <MovieCardSkeleton key={i} />
+            ))
+          ) : movies.length === 0 ? (
+            <p
+              className="text-sm text-white/35 py-6 px-1 shrink-0"
+              role="status"
+            >
+              No movies to show right now. Try again in a moment.
+            </p>
+          ) : (
+            movies.map((movie, i) => (
+              <MovieCard
+                key={movie.id || movie.tmdb_id}
+                movie={movie}
+                index={i}
+              />
+            ))
+          )}
         </div>
       </div>
     </section>
