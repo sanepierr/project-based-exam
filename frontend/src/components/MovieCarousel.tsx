@@ -74,10 +74,14 @@ export default function MovieCarousel({
           {href && (
             <Link
               href={href}
+              aria-label={`View all ${title}`}
               className="ml-2 flex items-center gap-1 text-xs text-gold/60 hover:text-gold transition-colors group"
             >
               View all
-              <ArrowRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
+              <ArrowRight
+                className="w-3 h-3 group-hover:translate-x-0.5 transition-transform"
+                aria-hidden
+              />
             </Link>
           )}
         </div>
