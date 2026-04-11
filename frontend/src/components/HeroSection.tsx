@@ -1,11 +1,21 @@
 "use client";
 
-import { useState, useEffect, useCallback, type FocusEvent } from "react";
+import {
+  useState,
+  useEffect,
+  useCallback,
+  useRef,
+  type FocusEvent,
+} from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { Play, Info, Star, ChevronLeft, ChevronRight } from "lucide-react";
 import { backdropUrl, posterUrl } from "@/lib/utils";
+import { moviesAPI, recommendationsAPI } from "@/lib/api";
+import { useAuth } from "@/lib/AuthContext";
 import type { MovieCompact } from "@/types/movie";
+
+type TrailerStatus = "idle" | "loading" | "ready" | "missing" | "error";
 
 interface HeroSectionProps {
   movies: MovieCompact[];
@@ -15,11 +25,18 @@ interface HeroSectionProps {
 const SLIDE_DURATION = 3000; 
 
 export default function HeroSection({ movies, loading = false }: HeroSectionProps) {
+  const { isAuthenticated } = useAuth();
   const [activeIndex, setActiveIndex] = useState(0);
   const [hoverPaused, setHoverPaused] = useState(false);
   const [focusWithin, setFocusWithin] = useState(false);
   const [reducedMotion, setReducedMotion] = useState(false);
   const [progressKey, setProgressKey] = useState(0);
+  const [trailerOpen, setTrailerOpen] = useState(false);
+  const [trailerTmdbId, setTrailerTmdbId] = useState<number | null>(null);
+  const [trailerTitle, setTrailerTitle] = useState("");
+  const [trailerKey, setTrailerKey] = useState<string | null>(null);
+  const [trailerStatus, setTrailerStatus] = useState<TrailerStatus>("idle");
+  const trailerTrackedRef = useRef(false);
 
   const heroMovies = movies.slice(0, 6);
 
@@ -38,6 +55,56 @@ export default function HeroSection({ movies, loading = false }: HeroSectionProp
   const goPrev = useCallback(() => {
     goTo((activeIndex - 1 + heroMovies.length) % heroMovies.length);
   }, [activeIndex, heroMovies.length, goTo]);
+
+  const closeTrailer = useCallback(() => {
+    setTrailerOpen(false);
+    setTrailerTmdbId(null);
+    setTrailerTitle("");
+    setTrailerKey(null);
+    setTrailerStatus("idle");
+  }, []);
+
+  useEffect(() => {
+    if (!trailerOpen) trailerTrackedRef.current = false;
+  }, [trailerOpen]);
+
+  useEffect(() => {
+    if (!trailerOpen || trailerTmdbId == null) return;
+    let cancelled = false;
+    setTrailerStatus("loading");
+    setTrailerKey(null);
+    moviesAPI
+      .getDetail(trailerTmdbId)
+      .then((data: { videos?: { results?: unknown[] } }) => {
+        if (cancelled) return;
+        const videos = data?.videos?.results || [];
+        const trailer = videos.find(
+          (v: { site?: string; type?: string; key?: string }) =>
+            v.site === "YouTube" && v.type === "Trailer"
+        ) as { key?: string } | undefined;
+        if (trailer?.key) {
+          setTrailerKey(trailer.key);
+          setTrailerStatus("ready");
+        } else {
+          setTrailerStatus("missing");
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setTrailerStatus("error");
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [trailerOpen, trailerTmdbId]);
+
+  useEffect(() => {
+    if (!trailerOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") closeTrailer();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [trailerOpen, closeTrailer]);
 
   useEffect(() => {
     const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
@@ -188,13 +255,19 @@ export default function HeroSection({ movies, loading = false }: HeroSectionProp
               <Info className="w-[18px] h-[18px]" />
               View Details
             </Link>
-            <Link
-              href={`/movie/${movie.tmdb_id || movie.id}`}
+            <button
+              type="button"
+              onClick={() => {
+                const id = movie.tmdb_id || movie.id;
+                setTrailerTmdbId(id);
+                setTrailerTitle(movie.title);
+                setTrailerOpen(true);
+              }}
               className="flex items-center gap-2 px-6 py-3.5 rounded-xl glass-card text-sm font-medium text-white/80 hover:text-white transition-all duration-300 hover:scale-[1.02]"
             >
-              <Play className="w-4 h-4" fill="currentColor" />
+              <Play className="w-4 h-4" fill="currentColor" aria-hidden />
               Trailer
-            </Link>
+            </button>
           </div>
         </div>
       </div>
@@ -287,6 +360,82 @@ export default function HeroSection({ movies, loading = false }: HeroSectionProp
           );
         })}
       </div>
+
+      {trailerOpen && (
+        <div
+          className="fixed inset-0 z-[100] bg-black/90 backdrop-blur-sm flex items-center justify-center p-4"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="hero-trailer-dialog-title"
+          onClick={closeTrailer}
+        >
+          <div
+            className="relative w-full max-w-4xl rounded-2xl border border-white/[0.06] shadow-2xl shadow-black/80 bg-surface-1 p-4 md:p-6"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h2
+              id="hero-trailer-dialog-title"
+              className="text-lg font-semibold text-white/90 mb-4 pr-10"
+            >
+              Trailer{trailerTitle ? `: ${trailerTitle}` : ""}
+            </h2>
+            <div className="relative w-full aspect-video rounded-xl overflow-hidden bg-black">
+              {trailerStatus === "loading" && (
+                <div className="absolute inset-0 flex items-center justify-center text-white/40 text-sm">
+                  Loading trailer…
+                </div>
+              )}
+              {trailerStatus === "ready" && trailerKey && (
+                <iframe
+                  title={`Trailer for ${trailerTitle}`}
+                  src={`https://www.youtube.com/embed/${trailerKey}?autoplay=1&rel=0`}
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                  className="absolute inset-0 w-full h-full"
+                  onLoad={() => {
+                    if (trailerTrackedRef.current) return;
+                    trailerTrackedRef.current = true;
+                    if (isAuthenticated && trailerTmdbId != null) {
+                      recommendationsAPI
+                        .trackInteraction({
+                          movie_tmdb_id: trailerTmdbId,
+                          movie_title: trailerTitle,
+                          interaction_type: "watched",
+                        })
+                        .catch(() => {});
+                    }
+                  }}
+                />
+              )}
+              {(trailerStatus === "missing" || trailerStatus === "error") && (
+                <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 text-center px-6">
+                  <p className="text-white/50 text-sm">
+                    {trailerStatus === "error"
+                      ? "We couldn’t load this trailer. Try again later."
+                      : "No trailer is available for this title yet."}
+                  </p>
+                  {trailerTmdbId != null && (
+                    <Link
+                      href={`/movie/${trailerTmdbId}`}
+                      className="text-gold text-sm hover:underline"
+                    >
+                      Open movie page
+                    </Link>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={closeTrailer}
+            className="absolute top-6 right-6 w-10 h-10 rounded-full glass flex items-center justify-center text-white/60 hover:text-white transition-colors"
+            aria-label="Close trailer"
+          >
+            ✕
+          </button>
+        </div>
+      )}
     </div>
   );
 }
