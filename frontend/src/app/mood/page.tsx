@@ -34,6 +34,7 @@ function MoodContent() {
   const [loading, setLoading] = useState(false);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [toastMessage, setToastMessage] = useState<string>("");
 
   useEffect(() => {
     if (!activeMood) return;
@@ -57,6 +58,13 @@ function MoodContent() {
 
   return (
     <div className="pt-24 pb-20 px-6 md:px-10 lg:px-20 max-w-[1440px] mx-auto">
+      {/* Toast */}
+      {toastMessage && (
+        <div className="fixed top-4 left-1/2 transform -translate-x-1/2 z-50 bg-gold/90 text-black px-4 py-2 rounded-lg font-semibold transition-opacity duration-300">
+          {toastMessage}
+        </div>
+      )}
+
       {/* Header */}
       <div className="text-center mb-12">
         <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-gold/10 border border-gold/15 mb-5">
@@ -78,6 +86,8 @@ function MoodContent() {
         <button
           onClick={() => {
             const randomMood = MOODS[Math.floor(Math.random() * MOODS.length)];
+            setToastMessage(`Surprise! Selected ${randomMood.label}`);
+            setTimeout(() => setToastMessage(""), 2000);
             router.push(`/mood?mood=${randomMood.slug}`);
           }}
           className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-gold/10 hover:bg-gold/20 border border-gold/20 text-gold font-semibold transition-all duration-200 hover:scale-105"
@@ -95,7 +105,11 @@ function MoodContent() {
           return (
             <button
               key={mood.slug}
-              onClick={() => router.push(`/mood?mood=${mood.slug}`)}
+              onClick={() => {
+                setToastMessage(`Selected ${mood.label}`);
+                setTimeout(() => setToastMessage(""), 2000);
+                router.push(`/mood?mood=${mood.slug}`);
+              }}
               className={`genre-card glass-card group relative overflow-hidden rounded-xl p-5 text-center transition-all duration-300 hover:scale-105 ${
                 isActive ? "ring-2 ring-gold/40 scale-[1.03]" : ""
               }`}
