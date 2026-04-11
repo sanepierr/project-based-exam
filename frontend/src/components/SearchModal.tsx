@@ -129,14 +129,14 @@ export default function SearchModal({ open, onClose }: SearchModalProps) {
               }}
               placeholder="Search movies, directors, actors..."
               aria-label="Search movies, directors, and actors"
-              className="flex-1 bg-transparent text-white placeholder:text-white/25 outline-none text-lg font-body"
+              className="flex-1 bg-transparent text-white placeholder:text-white/25 outline-none text-lg font-body focus-visible:ring-1 focus-visible:ring-gold/30 rounded-md"
             />
             {loading && <Loader2 className="w-5 h-5 text-gold/40 animate-spin" />}
             <button
               type="button"
               onClick={onClose}
               aria-label="Close search modal"
-              className="text-[10px] text-white/20 px-2 py-1 rounded border border-white/8 font-mono hover:border-white/15 transition-colors"
+              className="text-[10px] text-white/20 px-2 py-1 rounded border border-white/8 font-mono hover:border-white/15 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-gold/30 transition-colors"
             >
               ESC
             </button>
@@ -159,9 +159,9 @@ export default function SearchModal({ open, onClose }: SearchModalProps) {
                   onClick={() => handleSelect(movie.tmdb_id || movie.id)}
                   role="option"
                   aria-selected={i === selectedIndex}
-                  className={`w-full flex items-center gap-4 p-3 rounded-xl transition-all text-left ${
+                  className={`w-full flex items-center gap-4 p-3 rounded-xl transition-all text-left focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-gold/40 ${
                     i === selectedIndex
-                      ? "bg-gold/10 border border-gold/15"
+                      ? "bg-gold/10 border border-gold/15 ring-1 ring-gold/20"
                       : "hover:bg-white/[0.04] border border-transparent"
                   }`}
                 >
@@ -195,7 +195,7 @@ export default function SearchModal({ open, onClose }: SearchModalProps) {
               {/* See all */}
               <button
                 onClick={handleSubmit}
-                className="w-full flex items-center justify-center gap-2 text-sm text-gold/60 hover:text-gold py-3 transition-colors"
+                className="w-full flex items-center justify-center gap-2 text-sm text-gold/60 hover:text-gold py-3 rounded-lg focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-gold/40 transition-colors"
               >
                 See all results for &ldquo;{query}&rdquo;
                 <span className="text-gold/40">→</span>
@@ -225,7 +225,7 @@ export default function SearchModal({ open, onClose }: SearchModalProps) {
                     <button
                       key={hint}
                       onClick={() => setQuery(hint)}
-                      className="px-3 py-1.5 rounded-lg bg-white/[0.03] border border-white/[0.06] text-[12px] text-white/40 hover:text-white/60 hover:border-gold/15 transition-all"
+                      className="px-3 py-1.5 rounded-lg bg-white/[0.03] border border-white/[0.06] text-[12px] text-white/40 hover:text-white/60 hover:border-gold/15 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-gold/40 transition-all"
                     >
                       {hint}
                     </button>
