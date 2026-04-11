@@ -146,7 +146,7 @@ function MoodContent() {
                   <button
                     onClick={() => fetchMoodMovies(activeMood, page - 1)}
                     disabled={page <= 1}
-                    className="px-5 py-2.5 rounded-xl glass-card text-sm font-medium disabled:opacity-20"
+                    className="px-5 py-2.5 rounded-xl glass-card text-sm font-medium disabled:opacity-20 hover:bg-white/5 transition-all active:scale-95"
                   >
                     Previous
                   </button>
@@ -154,7 +154,7 @@ function MoodContent() {
                   <button
                     onClick={() => fetchMoodMovies(activeMood, page + 1)}
                     disabled={page >= totalPages}
-                    className="px-5 py-2.5 rounded-xl glass-card text-sm font-medium disabled:opacity-20"
+                    className="px-5 py-2.5 rounded-xl glass-card text-sm font-medium disabled:opacity-20 hover:bg-white/5 transition-all active:scale-95"
                   >
                     Next
                   </button>
