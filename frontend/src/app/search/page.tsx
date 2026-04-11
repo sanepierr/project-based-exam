@@ -30,6 +30,7 @@ const LANGUAGES = [
 
 const MIN_YEAR = 1900;
 const MAX_YEAR = 2026;
+const MAX_PAGES = 500;
 
 const GENRE_LIST = [
   { id: 28, name: "Action" }, { id: 12, name: "Adventure" }, { id: 16, name: "Animation" },
@@ -74,6 +75,11 @@ function SearchContent() {
     return String(Math.min(Math.max(parsed, min), max));
   }
 
+  function normalizeTotalPages(total: number | undefined) {
+    if (!total || Number.isNaN(total)) return 1;
+    return Math.min(Math.max(total, 1), MAX_PAGES);
+  }
+
   function updateQueryParam(nextQuery: string) {
     const params = new URLSearchParams(searchParams.toString());
     if (nextQuery) {
@@ -104,7 +110,7 @@ function SearchContent() {
     try {
       const data = await moviesAPI.search(q, p);
       setResults(data.results);
-      setTotalPages(data.total_pages || 1);
+      setTotalPages(normalizeTotalPages(data.total_pages));
       setTotalResults(data.total_results || 0);
       setPage(p);
     } catch (err) {
@@ -124,7 +130,7 @@ function SearchContent() {
         default: data = await moviesAPI.trending("week", p);
       }
       setResults(data.results);
-      setTotalPages(data.total_pages || 1);
+      setTotalPages(normalizeTotalPages(data.total_pages));
       setTotalResults(data.total_results || data.results.length || 0);
       setPage(p);
     } catch (err) {
@@ -154,7 +160,7 @@ function SearchContent() {
     try {
       const data = await moviesAPI.discover(buildDiscoverParams(p));
       setResults(data.results);
-      setTotalPages(data.total_pages || 1);
+      setTotalPages(normalizeTotalPages(data.total_pages));
       setTotalResults(data.total_results || 0);
       setPage(p);
     } catch (err) {
@@ -418,7 +424,7 @@ function SearchContent() {
                 Previous
               </button>
               <span className="text-sm text-white/30 font-mono tabular-nums px-4">
-                {page} / {Math.min(totalPages, 500)}
+                {page} / {totalPages}
               </span>
               <button
                 onClick={() => handlePageChange(page + 1)}
