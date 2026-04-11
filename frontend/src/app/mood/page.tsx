@@ -126,7 +126,8 @@ function MoodContent() {
           )}
 
           {loading ? (
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-5">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-5 relative">
+              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent animate-pulse" />
               {Array.from({ length: 18 }).map((_, i) => (
                 <MovieCardSkeleton key={i} />
               ))}
