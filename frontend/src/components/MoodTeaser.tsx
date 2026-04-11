@@ -7,12 +7,54 @@ import {
 } from "lucide-react";
 
 const MOODS_PREVIEW = [
-  { slug: "cozy-night", label: "Cozy Night", icon: Heart, color: "from-pink-500/20 to-rose-600/20", iconColor: "text-pink-400" },
-  { slug: "adrenaline", label: "Adrenaline", icon: Zap, color: "from-red-500/20 to-orange-600/20", iconColor: "text-red-400" },
-  { slug: "mind-bender", label: "Mind Bender", icon: Brain, color: "from-violet-500/20 to-purple-600/20", iconColor: "text-violet-400" },
-  { slug: "feel-good", label: "Feel Good", icon: Smile, color: "from-yellow-500/20 to-amber-500/20", iconColor: "text-yellow-400" },
-  { slug: "edge-of-seat", label: "Suspense", icon: Ghost, color: "from-slate-500/20 to-neutral-600/20", iconColor: "text-slate-400" },
-  { slug: "epic-adventure", label: "Adventure", icon: Mountain, color: "from-emerald-500/20 to-teal-600/20", iconColor: "text-emerald-400" },
+  {
+    slug: "cozy-night",
+    label: "Cozy Night",
+    icon: Heart,
+    color: "from-pink-500/20 to-rose-600/20",
+    iconClass:
+      "w-5 h-5 mx-auto mb-1.5 text-white/25 group-hover:text-pink-400 transition-colors",
+  },
+  {
+    slug: "adrenaline",
+    label: "Adrenaline",
+    icon: Zap,
+    color: "from-red-500/20 to-orange-600/20",
+    iconClass:
+      "w-5 h-5 mx-auto mb-1.5 text-white/25 group-hover:text-red-400 transition-colors",
+  },
+  {
+    slug: "mind-bender",
+    label: "Mind Bender",
+    icon: Brain,
+    color: "from-violet-500/20 to-purple-600/20",
+    iconClass:
+      "w-5 h-5 mx-auto mb-1.5 text-white/25 group-hover:text-violet-400 transition-colors",
+  },
+  {
+    slug: "feel-good",
+    label: "Feel Good",
+    icon: Smile,
+    color: "from-yellow-500/20 to-amber-500/20",
+    iconClass:
+      "w-5 h-5 mx-auto mb-1.5 text-white/25 group-hover:text-yellow-400 transition-colors",
+  },
+  {
+    slug: "edge-of-seat",
+    label: "Suspense",
+    icon: Ghost,
+    color: "from-slate-500/20 to-neutral-600/20",
+    iconClass:
+      "w-5 h-5 mx-auto mb-1.5 text-white/25 group-hover:text-slate-400 transition-colors",
+  },
+  {
+    slug: "epic-adventure",
+    label: "Adventure",
+    icon: Mountain,
+    color: "from-emerald-500/20 to-teal-600/20",
+    iconClass:
+      "w-5 h-5 mx-auto mb-1.5 text-white/25 group-hover:text-emerald-400 transition-colors",
+  },
 ];
 
 export default function MoodTeaser() {
@@ -63,7 +105,7 @@ export default function MoodTeaser() {
                 >
                   <div className={`absolute inset-0 bg-gradient-to-br ${mood.color} opacity-0 group-hover:opacity-100 transition-opacity duration-500`} />
                   <div className="relative z-10">
-                    <Icon className={`w-5 h-5 mx-auto mb-1.5 text-white/25 group-hover:${mood.iconColor} transition-colors`} />
+                    <Icon className={mood.iconClass} aria-hidden />
                     <p className="text-[11px] font-semibold text-white/50 group-hover:text-white/80 transition-colors">{mood.label}</p>
                   </div>
                 </Link>
