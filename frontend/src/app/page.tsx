@@ -15,6 +15,7 @@ export default function HomePage() {
   const [nowPlaying, setNowPlaying] = useState<MovieCompact[]>([]);
   const [topRated, setTopRated] = useState<MovieCompact[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadWarning, setLoadWarning] = useState<string | null>(null);
 
   useEffect(() => {
     async function fetchData() {
@@ -31,8 +32,20 @@ export default function HomePage() {
           setNowPlaying(npRes.value.results || []);
         if (trRes.status === "fulfilled")
           setTopRated(trRes.value.results || []);
+
+        const failed = [trendRes, npRes, trRes].filter(
+          (r) => r.status === "rejected"
+        );
+        setLoadWarning(
+          failed.length > 0
+            ? "Some movie lists could not be loaded. Refresh the page to try again."
+            : null
+        );
       } catch (err) {
         console.error("Failed to fetch movies:", err);
+        setLoadWarning(
+          "We could not reach the movie service. Check your connection and try again."
+        );
       } finally {
         setLoading(false);
       }
@@ -45,6 +58,14 @@ export default function HomePage() {
       <HeroSection movies={trending} loading={loading} />
 
       <div className="relative z-10 -mt-28 space-y-20 pb-24">
+        {loadWarning && (
+          <div
+            className="mx-6 md:mx-10 lg:mx-20 mb-2 rounded-xl border border-amber-500/25 bg-amber-500/10 px-4 py-3 text-sm text-amber-100/90"
+            role="status"
+          >
+            {loadWarning}
+          </div>
+        )}
 
         {/* Trending this week */}
         <MovieCarousel
