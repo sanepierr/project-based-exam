@@ -31,6 +31,7 @@ export default function MovieCard({
   return (
     <Link
       href={`/movie/${tmdbId}`}
+      aria-label={`${movie.title}${movie.year ? ` (${movie.year})` : ""} — view details`}
       className={`movie-card group flex-shrink-0 ${sizeClasses[size]}`}
       style={{ animationDelay: `${index * 50}ms` }}
     >
@@ -51,7 +52,7 @@ export default function MovieCard({
         {/* Hover overlay */}
         <div className="movie-card-overlay absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent opacity-0 flex flex-col items-center justify-end pb-4 transition-opacity duration-400">
           <div className="w-11 h-11 rounded-full bg-gold/90 flex items-center justify-center mb-2 shadow-lg shadow-gold/30 transition-transform group-hover:scale-110">
-            <Play className="w-4 h-4 text-surface-0 ml-0.5" fill="currentColor" />
+            <Play className="w-4 h-4 text-surface-0 ml-0.5" fill="currentColor" aria-hidden />
           </div>
           <span className="text-[11px] text-white/70 font-medium">View Details</span>
         </div>
