@@ -17,6 +17,8 @@ import type { MovieCompact } from "@/types/movie";
 
 type TrailerStatus = "idle" | "loading" | "ready" | "missing" | "error";
 
+type VideoResult = { site?: string; type?: string; key?: string };
+
 interface HeroSectionProps {
   movies: MovieCompact[];
   loading?: boolean;
@@ -75,13 +77,12 @@ export default function HeroSection({ movies, loading = false }: HeroSectionProp
     setTrailerKey(null);
     moviesAPI
       .getDetail(trailerTmdbId)
-      .then((data: { videos?: { results?: unknown[] } }) => {
+      .then((data: { videos?: { results?: VideoResult[] } }) => {
         if (cancelled) return;
         const videos = data?.videos?.results || [];
         const trailer = videos.find(
-          (v: { site?: string; type?: string; key?: string }) =>
-            v.site === "YouTube" && v.type === "Trailer"
-        ) as { key?: string } | undefined;
+          (v) => v.site === "YouTube" && v.type === "Trailer"
+        );
         if (trailer?.key) {
           setTrailerKey(trailer.key);
           setTrailerStatus("ready");
