@@ -84,6 +84,10 @@ function SearchContent() {
     }
   }, [initialQuery, sortParam]);
 
+  useEffect(() => {
+    setQuery(initialQuery);
+  }, [initialQuery]);
+
   async function performSearch(q: string, p: number) {
     if (!q.trim()) return;
     setLoading(true);
@@ -165,10 +169,11 @@ function SearchContent() {
   }
 
   function handlePageChange(newPage: number) {
+    const activeQuery = initialQuery || query.trim();
     if (hasActiveFilters || filterSort !== "popularity.desc") {
       applyFilters(newPage);
-    } else if (initialQuery) {
-      performSearch(initialQuery, newPage);
+    } else if (activeQuery) {
+      performSearch(activeQuery, newPage);
     } else {
       loadCategory(sortParam || "trending", newPage);
     }
