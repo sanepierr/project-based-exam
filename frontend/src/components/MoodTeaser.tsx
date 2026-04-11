@@ -1,5 +1,6 @@
 "use client";
 
+import { useId } from "react";
 import Link from "next/link";
 import {
   Sparkles, Heart, Zap, Brain, Smile, Ghost,
@@ -58,8 +59,13 @@ const MOODS_PREVIEW = [
 ];
 
 export default function MoodTeaser() {
+  const sectionTitleId = useId();
+
   return (
-    <section className="px-6 md:px-10 lg:px-20">
+    <section
+      className="px-6 md:px-10 lg:px-20"
+      aria-labelledby={sectionTitleId}
+    >
       <div className="glass-card rounded-2xl p-8 md:p-10 relative overflow-hidden">
         {/* Decorative */}
         <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-gold/20 to-transparent" />
@@ -75,7 +81,10 @@ export default function MoodTeaser() {
               </span>
             </div>
 
-            <h2 className="text-3xl md:text-4xl font-bold font-display leading-tight">
+            <h2
+              id={sectionTitleId}
+              className="text-3xl md:text-4xl font-bold font-display leading-tight"
+            >
               Not sure what<br />
               <span className="text-gold italic">to watch?</span>
             </h2>
@@ -86,10 +95,14 @@ export default function MoodTeaser() {
 
             <Link
               href="/mood"
+              aria-label="Open full mood picker to choose how you feel"
               className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-gold to-gold-dim text-surface-0 font-semibold text-sm hover:shadow-lg hover:shadow-gold/20 transition-all duration-300 hover:scale-[1.03] group"
             >
               Pick Your Mood
-              <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
+              <ArrowRight
+                className="w-4 h-4 group-hover:translate-x-0.5 transition-transform"
+                aria-hidden
+              />
             </Link>
           </div>
 
@@ -101,6 +114,7 @@ export default function MoodTeaser() {
                 <Link
                   key={mood.slug}
                   href={`/mood?mood=${mood.slug}`}
+                  aria-label={`See movies for mood: ${mood.label}`}
                   className="genre-card glass-card group rounded-xl p-4 text-center relative overflow-hidden"
                 >
                   <div className={`absolute inset-0 bg-gradient-to-br ${mood.color} opacity-0 group-hover:opacity-100 transition-opacity duration-500`} />
