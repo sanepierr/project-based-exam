@@ -43,6 +43,7 @@ function MoodContent() {
 
   async function fetchMoodMovies(slug: string, p: number) {
     setLoading(true);
+    setError(null);
     try {
       const data = await moviesAPI.getMoodMovies(slug, p);
       setMovies(data.results || []);
