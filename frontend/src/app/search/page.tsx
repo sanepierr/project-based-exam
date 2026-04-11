@@ -2,6 +2,8 @@
 
 import { useState, Suspense } from "react";
 import { Search, Loader2 } from "lucide-react";
+import { moviesAPI } from "@/lib/api";
+import type { MovieCompact } from "@/types/movie";
 
 const SORT_OPTIONS = [
   { value: "popularity.desc", label: "Most Popular" },
@@ -35,12 +37,32 @@ const GENRE_LIST = [
 
 function SearchContent() {
   const [query, setQuery] = useState("");
+  const [results, setResults] = useState<MovieCompact[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalResults, setTotalResults] = useState(0);
+
+  async function performSearch(q: string, p: number) {
+    if (!q.trim()) return;
+    setLoading(true);
+    try {
+      const data = await moviesAPI.search(q, p);
+      setResults(data.results);
+      setTotalPages(data.total_pages || 1);
+      setTotalResults(data.total_results || 0);
+      setPage(p);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  }
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (query.trim()) {
-      // search will be wired in next commit
-      console.log("search:", query.trim());
+      performSearch(query, 1);
     }
   }
 
@@ -61,19 +83,36 @@ function SearchContent() {
         </div>
       </form>
 
-      {/* Page title */}
+      {/* Title + count */}
       <div className="flex items-center justify-between mb-8">
         <h1 className="text-3xl font-bold font-display">Trending Movies</h1>
+        {totalResults > 0 && (
+          <span className="text-sm text-white/30">{totalResults.toLocaleString()} results</span>
+        )}
       </div>
 
-      {/* Empty state */}
-      <div className="text-center py-24">
-        <div className="w-16 h-16 rounded-2xl glass-card flex items-center justify-center mx-auto mb-5">
-          <Search className="w-7 h-7 text-white/15" />
+      {/* Results or empty state */}
+      {loading ? (
+        <div className="flex justify-center py-24">
+          <Loader2 className="w-8 h-8 animate-spin text-gold/40" />
         </div>
-        <p className="text-lg text-white/25 mb-2">No movies found</p>
-        <p className="text-sm text-white/15">Try searching for something</p>
-      </div>
+      ) : results.length > 0 ? (
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-5">
+          {results.map((movie) => (
+            <div key={movie.id || movie.tmdb_id} className="text-white/50 text-sm p-3 glass-card rounded-xl">
+              {movie.title}
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div className="text-center py-24">
+          <div className="w-16 h-16 rounded-2xl glass-card flex items-center justify-center mx-auto mb-5">
+            <Search className="w-7 h-7 text-white/15" />
+          </div>
+          <p className="text-lg text-white/25 mb-2">No movies found</p>
+          <p className="text-sm text-white/15">Try searching for something</p>
+        </div>
+      )}
     </div>
   );
 }
