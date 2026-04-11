@@ -216,8 +216,11 @@ export default function SearchModal({ open, onClose }: SearchModalProps) {
           {/* Empty state */}
           {query.length < 2 && (
             <div className="p-4 pb-5">
+              <p className="text-[11px] text-white/30 px-3 pb-1">
+                Type at least 2 characters to start searching.
+              </p>
               <p className="text-[10px] uppercase tracking-wider text-white/20 px-3 py-2 font-semibold">
-                Try searching for
+                Try searching for movies, people, or genres
               </p>
               <div className="flex flex-wrap gap-2 px-3">
                 {["Inception", "Christopher Nolan", "Sci-Fi", "The Godfather", "Studio Ghibli"].map(
