@@ -25,6 +25,8 @@ const MOODS = [
 ];
 
 function MoodContent() {
+  const renderSkeletons = () => Array.from({ length: 18 }).map((_, i) => <MovieCardSkeleton key={i} />);
+
   const searchParams = useSearchParams();
   const router = useRouter();
   const activeMood = searchParams.get("mood") || "";
@@ -132,9 +134,7 @@ function MoodContent() {
             </div>
           ) : loading ? (
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-5">
-              {Array.from({ length: 18 }).map((_, i) => (
-                <MovieCardSkeleton key={i} />
-              ))}
+              {renderSkeletons()}
             </div>
           ) : (
             <>
