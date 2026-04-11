@@ -145,7 +145,10 @@ function MoodContent() {
               <div className="relative z-10">
                 <Icon className={`w-6 h-6 mx-auto mb-2 ${isActive ? mood.iconColor : "text-white/30"} group-hover:${mood.iconColor} transition-colors`} />
                 <p className="text-sm font-semibold text-white/80 mb-0.5">{mood.label}</p>
-                <p className="text-[10px] text-white/30">{mood.desc}</p>
+                <p className="text-[10px] text-white/30 group-hover:opacity-0 transition-opacity">{mood.desc}</p>
+                <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-black/80 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">
+                  {mood.desc}
+                </div>
               </div>
             </button>
           );
