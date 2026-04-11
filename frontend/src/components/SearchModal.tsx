@@ -78,7 +78,9 @@ export default function SearchModal({ open, onClose }: SearchModalProps) {
       setSelectedIndex((i) => Math.max(i - 1, -1));
     } else if (e.key === "Enter" && selectedIndex >= 0) {
       e.preventDefault();
-      handleSelect(results[selectedIndex].tmdb_id || results[selectedIndex].id);
+      const selectedMovie = results[selectedIndex];
+      if (!selectedMovie) return;
+      handleSelect(selectedMovie.tmdb_id || selectedMovie.id);
     }
   };
 
