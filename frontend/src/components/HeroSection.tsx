@@ -244,8 +244,10 @@ export default function HeroSection({ movies, loading = false }: HeroSectionProp
           const pUrl = posterUrl(m.poster_url || (m as any).poster_path, "w185");
           return (
             <button
+              type="button"
               key={m.id || m.tmdb_id}
               onClick={() => goTo(i)}
+              aria-label={`Show ${m.title} in hero`}
               className={`relative w-[60px] h-[90px] rounded-lg overflow-hidden transition-all duration-400 ${
                 i === activeIndex
                   ? "ring-2 ring-gold/60 scale-110 shadow-lg shadow-gold/10"
