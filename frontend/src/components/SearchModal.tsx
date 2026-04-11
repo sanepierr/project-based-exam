@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
-import { Search, X, Loader2, Star, TrendingUp } from "lucide-react";
+import { Search, X, Loader2, Star } from "lucide-react";
 import { moviesAPI } from "@/lib/api";
 import { posterUrl } from "@/lib/utils";
 import type { MovieCompact } from "@/types/movie";
@@ -36,9 +36,7 @@ export default function SearchModal({ open, onClose }: SearchModalProps) {
     const handler = (e: KeyboardEvent) => {
       if (e.key === "k" && (e.metaKey || e.ctrlKey)) {
         e.preventDefault();
-        if (open) {
-          onClose();
-        }
+        if (open) onClose();
       }
       if (e.key === "Escape" && open) onClose();
     };
