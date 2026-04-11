@@ -1,7 +1,7 @@
 "use client";
 
 import GenreGrid from "@/components/GenreGrid";
-import { Clapperboard } from "lucide-react";
+import { Clapperboard, Link2, Check } from "lucide-react";
 
 export default function GenresPage() {
   return (
