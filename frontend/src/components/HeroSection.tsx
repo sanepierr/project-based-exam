@@ -44,6 +44,28 @@ export default function HeroSection({ movies, loading = false }: HeroSectionProp
     return () => clearInterval(timer);
   }, [goNext, isPaused, heroMovies.length]);
 
+  if (loading && !heroMovies.length) {
+    return (
+      <div className="relative h-[92vh] overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-br from-surface-1 to-surface-0" />
+        <div className="absolute bottom-0 left-0 right-0 px-6 md:px-10 lg:px-20 pb-36 z-10 max-w-2xl space-y-5">
+          <div className="skeleton h-6 w-40 rounded-full" />
+          <div className="skeleton h-14 md:h-20 w-full max-w-xl rounded-xl" />
+          <div className="skeleton h-20 w-full max-w-lg rounded-lg" />
+          <div className="flex gap-2">
+            <div className="skeleton h-9 w-24 rounded-full" />
+            <div className="skeleton h-9 w-24 rounded-full" />
+            <div className="skeleton h-9 w-24 rounded-full" />
+          </div>
+          <div className="flex gap-3 pt-4">
+            <div className="skeleton h-12 w-40 rounded-xl" />
+            <div className="skeleton h-12 w-36 rounded-xl" />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   if (!heroMovies.length) {
     return (
       <div className="h-[90vh] flex items-center justify-center relative overflow-hidden">
