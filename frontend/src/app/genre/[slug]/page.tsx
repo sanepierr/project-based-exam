@@ -1,12 +1,18 @@
 "use client";
 
 import { useState, useEffect, Suspense } from "react";
-import { useParams, useSearchParams } from "next/navigation";
-import { ArrowLeft, Loader2 } from "lucide-react";
+import { useParams, useSearchParams, useRouter } from "next/navigation";
+import { ArrowLeft, Loader2, Link2, Check } from "lucide-react";
 import Link from "next/link";
 import MovieCard, { MovieCardSkeleton } from "@/components/MovieCard";
 import { genresAPI } from "@/lib/api";
 import type { MovieCompact } from "@/types/movie";
+
+const SORT_OPTIONS = [
+  { value: "popularity.desc", label: "Popularity" },
+  { value: "vote_average.desc", label: "Rating" },
+  { value: "primary_release_date.desc", label: "Newest" },
+] as const;
 
 function GenreContent() {
   const params = useParams();
