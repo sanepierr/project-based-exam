@@ -36,6 +36,7 @@ function MoodContent() {
   const [totalPages, setTotalPages] = useState(1);
   const [toastMessage, setToastMessage] = useState<string>("");
   const [focusedIndex, setFocusedIndex] = useState<number>(-1);
+  const [showBackToTop, setShowBackToTop] = useState(false);
 
   useEffect(() => {
     if (!activeMood) return;
@@ -63,6 +64,14 @@ function MoodContent() {
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [focusedIndex, router]);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setShowBackToTop(window.scrollY > 300);
+    };
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
 
   async function fetchMoodMovies(slug: string, p: number) {
     setLoading(true);
@@ -204,6 +213,16 @@ function MoodContent() {
             </>
           )}
         </div>
+      )}
+
+      {/* Back to Top Button */}
+      {showBackToTop && (
+        <button
+          onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+          className="fixed bottom-8 right-8 z-40 bg-gold/20 hover:bg-gold/30 border border-gold/30 text-gold p-3 rounded-full transition-all duration-200 hover:scale-110"
+        >
+          <ArrowLeft className="w-5 h-5 rotate-[-90deg]" />
+        </button>
       )}
 
       {/* Empty state */}
