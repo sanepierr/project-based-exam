@@ -35,11 +35,34 @@ function MoodContent() {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [toastMessage, setToastMessage] = useState<string>("");
+  const [focusedIndex, setFocusedIndex] = useState<number>(-1);
 
   useEffect(() => {
     if (!activeMood) return;
     fetchMoodMovies(activeMood, 1);
   }, [activeMood]);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (focusedIndex === -1) return;
+      if (e.key === "Enter") {
+        const mood = MOODS[focusedIndex];
+        setToastMessage(`Selected ${mood.label}`);
+        setTimeout(() => setToastMessage(""), 2000);
+        router.push(`/mood?mood=${mood.slug}`);
+      } else if (e.key === "ArrowRight") {
+        setFocusedIndex((prev) => (prev + 1) % MOODS.length);
+      } else if (e.key === "ArrowLeft") {
+        setFocusedIndex((prev) => (prev - 1 + MOODS.length) % MOODS.length);
+      } else if (e.key === "ArrowDown") {
+        setFocusedIndex((prev) => Math.min(prev + 5, MOODS.length - 1));
+      } else if (e.key === "ArrowUp") {
+        setFocusedIndex((prev) => Math.max(prev - 5, 0));
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [focusedIndex, router]);
 
   async function fetchMoodMovies(slug: string, p: number) {
     setLoading(true);
@@ -105,12 +128,14 @@ function MoodContent() {
           return (
             <button
               key={mood.slug}
+              tabIndex={0}
+              onFocus={() => setFocusedIndex(MOODS.findIndex(m => m.slug === mood.slug))}
               onClick={() => {
                 setToastMessage(`Selected ${mood.label}`);
                 setTimeout(() => setToastMessage(""), 2000);
                 router.push(`/mood?mood=${mood.slug}`);
               }}
-              className={`genre-card glass-card group relative overflow-hidden rounded-xl p-5 text-center transition-all duration-300 hover:scale-105 ${
+              className={`genre-card glass-card group relative overflow-hidden rounded-xl p-5 text-center transition-all duration-300 hover:scale-105 focus:outline-none focus:ring-2 focus:ring-gold/50 ${
                 isActive ? "ring-2 ring-gold/40 scale-[1.03]" : ""
               }`}
             >
