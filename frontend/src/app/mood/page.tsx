@@ -35,6 +35,7 @@ function MoodContent() {
   const [error, setError] = useState<string | null>(null);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [totalResults, setTotalResults] = useState(0);
 
   useEffect(() => {
     if (!activeMood) return;
@@ -49,6 +50,7 @@ function MoodContent() {
       setMovies(data.results || []);
       setMoodInfo(data.mood);
       setTotalPages(data.total_pages || 1);
+      setTotalResults(data.total_results || 0);
       setPage(p);
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } catch (err: any) {
@@ -114,6 +116,7 @@ function MoodContent() {
                   <button onClick={() => router.push('/mood')} className="text-xs px-3 py-1.5 rounded-lg border border-white/10 hover:bg-white/5 transition-colors text-white/40">Clear</button>
                 </div>
                 <p className="text-sm text-white/30 mt-0.5">{moodInfo.description}</p>
+                {totalResults > 0 && <span className="inline-block mt-2 text-[11px] px-2 py-1 bg-white/5 rounded-md text-white/40">{totalResults} titles found</span>}
               </div>
             </div>
           )}
