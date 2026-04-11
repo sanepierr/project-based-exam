@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense } from "react";
+import { useState, Suspense } from "react";
 import { Search, Loader2 } from "lucide-react";
 
 const SORT_OPTIONS = [
@@ -34,14 +34,26 @@ const GENRE_LIST = [
 ];
 
 function SearchContent() {
+  const [query, setQuery] = useState("");
+
+  function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (query.trim()) {
+      // search will be wired in next commit
+      console.log("search:", query.trim());
+    }
+  }
+
   return (
     <div className="pt-24 pb-20 px-6 md:px-10 lg:px-20 max-w-[1440px] mx-auto">
       {/* Search bar */}
-      <form className="mb-6">
+      <form onSubmit={handleSubmit} className="mb-6">
         <div className="relative max-w-2xl mx-auto">
           <Search className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-gold/40" />
           <input
             type="text"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
             placeholder="Search movies, directors, actors..."
             className="w-full h-14 pr-5 rounded-2xl bg-surface-2 border border-white/[0.08] text-white placeholder:text-white/25 outline-none focus:border-gold/40 focus:ring-1 focus:ring-gold/20 transition-all text-lg font-body"
             style={{ paddingLeft: "3.25rem" }}
