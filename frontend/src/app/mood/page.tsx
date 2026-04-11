@@ -177,6 +177,7 @@ function MoodContent() {
                   <button
                     onClick={() => setMoodPage(page - 1)}
                     disabled={page <= 1}
+                    aria-label="Go to previous page"
                     className="px-5 py-2.5 rounded-xl glass-card text-sm font-medium disabled:opacity-20"
                   >
                     Previous
