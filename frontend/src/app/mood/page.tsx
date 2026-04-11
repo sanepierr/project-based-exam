@@ -113,7 +113,16 @@ function MoodContent() {
             </div>
           )}
 
-          {loading ? (
+          {error ? (
+            <div className="flex flex-col items-center justify-center py-20 text-center glass-card rounded-2xl border border-red-500/10">
+              <Zap className="w-10 h-10 text-red-400 mb-4" />
+              <h3 className="text-xl font-display font-medium text-white/90 mb-2">Something went wrong</h3>
+              <p className="text-sm text-white/40 mb-6">{error}</p>
+              <button type="button" onClick={() => fetchMoodMovies(activeMood, page)} className="px-6 py-2.5 rounded-xl bg-red-500/10 text-red-400 text-sm font-medium hover:bg-red-500/20 transition-colors">
+                Retry
+              </button>
+            </div>
+          ) : loading ? (
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-5">
               {Array.from({ length: 18 }).map((_, i) => (
                 <MovieCardSkeleton key={i} />
