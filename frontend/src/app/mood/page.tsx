@@ -5,7 +5,7 @@ import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import {
   Sparkles, Heart, Zap, Flame, Brain, Smile, Ghost,
-  Mountain, Baby, BookOpen, ArrowLeft, Loader2,
+  Mountain, Baby, BookOpen, ArrowLeft, Loader2, Shuffle,
 } from "lucide-react";
 import MovieCard, { MovieCardSkeleton } from "@/components/MovieCard";
 import { moviesAPI } from "@/lib/api";
@@ -71,6 +71,20 @@ function MoodContent() {
         <p className="text-white/35 max-w-md mx-auto">
           Pick a vibe and we&apos;ll curate the perfect movies for your current state of mind.
         </p>
+      </div>
+
+      {/* Surprise Me Button */}
+      <div className="flex justify-center mb-8">
+        <button
+          onClick={() => {
+            const randomMood = MOODS[Math.floor(Math.random() * MOODS.length)];
+            router.push(`/mood?mood=${randomMood.slug}`);
+          }}
+          className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-gold/10 hover:bg-gold/20 border border-gold/20 text-gold font-semibold transition-all duration-200 hover:scale-105"
+        >
+          <Shuffle className="w-4 h-4" />
+          Surprise Me
+        </button>
       </div>
 
       {/* Mood grid */}
