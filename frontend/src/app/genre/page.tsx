@@ -1,9 +1,11 @@
 "use client";
 
+import { useState } from "react";
 import GenreGrid from "@/components/GenreGrid";
 import { Clapperboard, Link2, Check } from "lucide-react";
 
 export default function GenresPage() {
+  const [copied, setCopied] = useState(false);
   return (
     <div className="pt-24 pb-20 px-6 md:px-12 lg:px-20 max-w-[1400px] mx-auto">
       <div className="flex items-center gap-3 mb-8">
