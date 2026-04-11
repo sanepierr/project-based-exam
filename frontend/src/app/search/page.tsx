@@ -215,7 +215,6 @@ function SearchContent() {
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     const trimmedQuery = query.trim();
-    if (!trimmedQuery) return;
     updateQueryParam(trimmedQuery);
   }
 
