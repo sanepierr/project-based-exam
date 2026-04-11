@@ -28,6 +28,9 @@ const LANGUAGES = [
   { value: "it", label: "Italian" },
 ];
 
+const MIN_YEAR = 1900;
+const MAX_YEAR = 2026;
+
 const GENRE_LIST = [
   { id: 28, name: "Action" }, { id: 12, name: "Adventure" }, { id: 16, name: "Animation" },
   { id: 35, name: "Comedy" }, { id: 80, name: "Crime" }, { id: 99, name: "Documentary" },
@@ -63,6 +66,13 @@ function SearchContent() {
   const [filterSort, setFilterSort] = useState("popularity.desc");
 
   const hasActiveFilters = !!(filterGenre || filterYearFrom || filterYearTo || filterRating || filterRuntimeMin || filterRuntimeMax || filterLanguage);
+
+  function sanitizeNumberInput(value: string, min: number, max: number) {
+    const cleaned = value.replace(/[^\d]/g, "");
+    if (!cleaned) return "";
+    const parsed = Number(cleaned);
+    return String(Math.min(Math.max(parsed, min), max));
+  }
 
   function updateQueryParam(nextQuery: string) {
     const params = new URLSearchParams(searchParams.toString());
@@ -259,7 +269,7 @@ function SearchContent() {
                 <input
                   type="number"
                   value={filterYearFrom}
-                  onChange={(e) => setFilterYearFrom(e.target.value)}
+                  onChange={(e) => setFilterYearFrom(sanitizeNumberInput(e.target.value, MIN_YEAR, MAX_YEAR))}
                   placeholder="From"
                   min="1900"
                   max="2026"
@@ -268,7 +278,7 @@ function SearchContent() {
                 <input
                   type="number"
                   value={filterYearTo}
-                  onChange={(e) => setFilterYearTo(e.target.value)}
+                  onChange={(e) => setFilterYearTo(sanitizeNumberInput(e.target.value, MIN_YEAR, MAX_YEAR))}
                   placeholder="To"
                   min="1900"
                   max="2026"
@@ -314,7 +324,7 @@ function SearchContent() {
                 <input
                   type="number"
                   value={filterRuntimeMin}
-                  onChange={(e) => setFilterRuntimeMin(e.target.value)}
+                  onChange={(e) => setFilterRuntimeMin(sanitizeNumberInput(e.target.value, 0, 500))}
                   placeholder="Min"
                   min="0"
                   className="w-full h-10 px-3 rounded-xl bg-surface-2 border border-white/[0.08] text-white text-sm outline-none focus:border-gold/30 placeholder:text-white/20 transition-colors"
@@ -322,7 +332,7 @@ function SearchContent() {
                 <input
                   type="number"
                   value={filterRuntimeMax}
-                  onChange={(e) => setFilterRuntimeMax(e.target.value)}
+                  onChange={(e) => setFilterRuntimeMax(sanitizeNumberInput(e.target.value, 0, 500))}
                   placeholder="Max"
                   min="0"
                   className="w-full h-10 px-3 rounded-xl bg-surface-2 border border-white/[0.08] text-white text-sm outline-none focus:border-gold/30 placeholder:text-white/20 transition-colors"
