@@ -59,6 +59,25 @@ function SearchContent() {
     }
   }
 
+  async function loadCategory(cat: string, p: number) {
+    setLoading(true);
+    try {
+      let data;
+      switch (cat) {
+        case "now_playing": data = await moviesAPI.nowPlaying(p); break;
+        case "top_rated":  data = await moviesAPI.topRated(p);   break;
+        default:           data = await moviesAPI.trending("week", p);
+      }
+      setResults(data.results);
+      setTotalPages(data.total_pages || 1);
+      setPage(p);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  }
+
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (query.trim()) {
