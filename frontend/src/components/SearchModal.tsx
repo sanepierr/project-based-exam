@@ -19,6 +19,7 @@ export default function SearchModal({ open, onClose }: SearchModalProps) {
   const [loading, setLoading] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(-1);
   const inputRef = useRef<HTMLInputElement>(null);
+  const searchRequestRef = useRef(0);
   const router = useRouter();
 
   useEffect(() => {
@@ -47,18 +48,27 @@ export default function SearchModal({ open, onClose }: SearchModalProps) {
   // Debounced search
   useEffect(() => {
     if (query.length < 2) {
+      searchRequestRef.current += 1;
+      setLoading(false);
       setResults([]);
       return;
     }
     const timer = setTimeout(async () => {
+      const requestId = ++searchRequestRef.current;
       setLoading(true);
       try {
         const data = await moviesAPI.search(query);
-        setResults(data.results.slice(0, 6));
+        if (requestId === searchRequestRef.current) {
+          setResults(data.results.slice(0, 6));
+        }
       } catch {
-        setResults([]);
+        if (requestId === searchRequestRef.current) {
+          setResults([]);
+        }
       } finally {
-        setLoading(false);
+        if (requestId === searchRequestRef.current) {
+          setLoading(false);
+        }
       }
     }, 250);
     return () => clearTimeout(timer);
