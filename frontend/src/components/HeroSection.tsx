@@ -16,7 +16,8 @@ const SLIDE_DURATION = 3000;
 
 export default function HeroSection({ movies, loading = false }: HeroSectionProps) {
   const [activeIndex, setActiveIndex] = useState(0);
-  const [isPaused, setIsPaused] = useState(false);
+  const [hoverPaused, setHoverPaused] = useState(false);
+  const [reducedMotion, setReducedMotion] = useState(false);
   const [progressKey, setProgressKey] = useState(0);
 
   const heroMovies = movies.slice(0, 6);
@@ -37,12 +38,20 @@ export default function HeroSection({ movies, loading = false }: HeroSectionProp
     goTo((activeIndex - 1 + heroMovies.length) % heroMovies.length);
   }, [activeIndex, heroMovies.length, goTo]);
 
+  useEffect(() => {
+    const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
+    setReducedMotion(mq.matches);
+    const onChange = () => setReducedMotion(mq.matches);
+    mq.addEventListener("change", onChange);
+    return () => mq.removeEventListener("change", onChange);
+  }, []);
+
   // Auto-advance
   useEffect(() => {
-    if (isPaused || heroMovies.length <= 1) return;
+    if (hoverPaused || reducedMotion || heroMovies.length <= 1) return;
     const timer = setInterval(goNext, SLIDE_DURATION);
     return () => clearInterval(timer);
-  }, [goNext, isPaused, heroMovies.length]);
+  }, [goNext, hoverPaused, reducedMotion, heroMovies.length]);
 
   if (loading && !heroMovies.length) {
     return (
@@ -88,8 +97,8 @@ export default function HeroSection({ movies, loading = false }: HeroSectionProp
   return (
     <div
       className="relative h-[92vh] overflow-hidden"
-      onMouseEnter={() => setIsPaused(true)}
-      onMouseLeave={() => setIsPaused(false)}
+      onMouseEnter={() => setHoverPaused(true)}
+      onMouseLeave={() => setHoverPaused(false)}
     >
       {heroMovies.map((m, i) => {
         const bg = backdropUrl((m as any).backdrop_url || m.poster_url);
@@ -222,7 +231,8 @@ export default function HeroSection({ movies, loading = false }: HeroSectionProp
                   className="hero-progress-fill"
                   style={{
                     animationDuration: `${SLIDE_DURATION}ms`,
-                    animationPlayState: isPaused ? "paused" : "running",
+                    animationPlayState:
+                      hoverPaused || reducedMotion ? "paused" : "running",
                   }}
                 />
               )}
