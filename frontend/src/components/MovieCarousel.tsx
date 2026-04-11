@@ -88,6 +88,7 @@ export default function MovieCarousel({
         <div
           ref={scrollRef}
           className="scroll-x flex gap-4 px-6 md:px-10 lg:px-20 pb-4"
+          aria-label={`${title} — horizontally scrollable list`}
         >
           {loading ? (
             Array.from({ length: 8 }).map((_, i) => (
