@@ -38,6 +38,7 @@ function MoodContent() {
   const [sortBy, setSortBy] = useState("popularity.desc");
   const [favorites, setFavorites] = useState<string[]>([]);
   const [history, setHistory] = useState<string[]>([]);
+  const [error, setError] = useState<string>("");
   const [toastMessage, setToastMessage] = useState<string>("");
   const [focusedIndex, setFocusedIndex] = useState<number>(-1);
   const [showBackToTop, setShowBackToTop] = useState(false);
@@ -96,6 +97,7 @@ function MoodContent() {
 
   async function fetchMoodMovies(slug: string, p: number, sort?: string) {
     setLoading(true);
+    setError("");
     try {
       const data = await moviesAPI.getMoodMovies(slug, p, sort || sortBy);
       setMovies(data.results || []);
@@ -105,6 +107,7 @@ function MoodContent() {
       setPage(p);
     } catch (err) {
       console.error(err);
+      setError("Failed to load movies. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -249,6 +252,16 @@ function MoodContent() {
               {Array.from({ length: 18 }).map((_, i) => (
                 <MovieCardSkeleton key={i} />
               ))}
+            </div>
+          ) : error ? (
+            <div className="text-center py-10">
+              <p className="text-red-400 mb-4">{error}</p>
+              <button
+                onClick={() => fetchMoodMovies(activeMood, page)}
+                className="px-6 py-2 bg-red-500/20 hover:bg-red-500/30 text-red-400 rounded-lg transition-colors"
+              >
+                Retry
+              </button>
             </div>
           ) : (
             <>
