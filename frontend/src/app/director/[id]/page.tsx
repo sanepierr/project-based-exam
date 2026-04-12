@@ -4,11 +4,14 @@ import { useState, useEffect, useCallback } from "react";
 import { useParams } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowLeft, Calendar, MapPin, Film, Star, Users, AlertCircle } from "lucide-react";
+import {
+  ArrowLeft, Calendar, MapPin, Film, Star, Users, Link2, Check, ChevronDown, ExternalLink,
+} from "lucide-react";
 import MovieCard from "@/components/MovieCard";
 import { peopleAPI } from "@/lib/api";
 import { formatDate } from "@/lib/utils";
-import type { Person } from "@/types/movie";
+
+type FilmFilter = "all" | "directed" | "acted";
 
 export default function DirectorPage() {
   const params = useParams();
@@ -16,28 +19,9 @@ export default function DirectorPage() {
 
   const [person, setPerson] = useState<Person | null>(null);
   const [loading, setLoading] = useState(true);
-  const [loadError, setLoadError] = useState(false);
   const [bioExpanded, setBioExpanded] = useState(false);
-
-  const fetchPerson = useCallback(async () => {
-    if (!personId || Number.isNaN(personId)) return;
-    setLoading(true);
-    setLoadError(false);
-    try {
-      const data = await peopleAPI.enrich(personId);
-      setPerson(data);
-    } catch {
-      try {
-        const data = await peopleAPI.getDetail(personId);
-        setPerson(data);
-      } catch {
-        setPerson(null);
-        setLoadError(true);
-      }
-    } finally {
-      setLoading(false);
-    }
-  }, [personId]);
+  const [filmFilter, setFilmFilter] = useState<FilmFilter>("all");
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     fetchPerson();
