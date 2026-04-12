@@ -5,7 +5,7 @@ import { useParams } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import { ArrowLeft, Calendar, MapPin, Film, Star, Users } from "lucide-react";
-import MovieCard, { MovieCardSkeleton } from "@/components/MovieCard";
+import MovieCard from "@/components/MovieCard";
 import { peopleAPI } from "@/lib/api";
 import { formatDate, posterUrl } from "@/lib/utils";
 
