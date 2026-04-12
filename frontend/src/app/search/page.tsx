@@ -2,7 +2,7 @@
 
 import { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
-import { Search, Loader2 } from "lucide-react";
+import { Search, Loader2, SlidersHorizontal, ChevronDown } from "lucide-react";
 import MovieCard, { MovieCardSkeleton } from "@/components/MovieCard";
 import { moviesAPI } from "@/lib/api";
 import type { MovieCompact } from "@/types/movie";
@@ -48,6 +48,7 @@ function SearchContent() {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalResults, setTotalResults] = useState(0);
+  const [filtersOpen, setFiltersOpen] = useState(false);
 
   useEffect(() => {
     if (initialQuery) {
@@ -135,6 +136,18 @@ function SearchContent() {
           />
         </div>
       </form>
+
+      {/* Filter toggle */}
+      <div className="flex items-center justify-center mb-8">
+        <button
+          onClick={() => setFiltersOpen(!filtersOpen)}
+          className="flex items-center gap-2 px-5 py-2.5 rounded-xl glass-card text-sm font-medium text-white/50 hover:text-white transition-all"
+        >
+          <SlidersHorizontal className="w-4 h-4" />
+          Advanced Filters
+          <ChevronDown className={`w-3.5 h-3.5 transition-transform ${filtersOpen ? "rotate-180" : ""}`} />
+        </button>
+      </div>
 
       {/* Title + count */}
       <div className="flex items-center justify-between mb-8">
