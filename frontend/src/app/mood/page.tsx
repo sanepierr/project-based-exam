@@ -176,6 +176,7 @@ function MoodContent() {
                 ))}
               </div>
 
+              {/* Pagination — only shown when there are multiple pages of results */}
               {totalPages > 1 && (
                 <div className="flex items-center justify-center gap-3 mt-12">
                   <button
