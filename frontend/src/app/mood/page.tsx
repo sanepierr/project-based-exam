@@ -37,10 +37,16 @@ function MoodContent() {
   const [toastMessage, setToastMessage] = useState<string>("");
   const [focusedIndex, setFocusedIndex] = useState<number>(-1);
   const [showBackToTop, setShowBackToTop] = useState(false);
+  const [themeColor, setThemeColor] = useState<string>("");
 
   useEffect(() => {
     if (!activeMood) return;
     fetchMoodMovies(activeMood, 1);
+  }, [activeMood]);
+
+  useEffect(() => {
+    const mood = MOODS.find(m => m.slug === activeMood);
+    setThemeColor(mood ? mood.color : "");
   }, [activeMood]);
 
   useEffect(() => {
@@ -89,7 +95,7 @@ function MoodContent() {
   }
 
   return (
-    <div className="pt-24 pb-20 px-6 md:px-10 lg:px-20 max-w-[1440px] mx-auto">
+    <div className={`pt-24 pb-20 px-6 md:px-10 lg:px-20 max-w-[1440px] mx-auto transition-all duration-500 ${themeColor ? `bg-gradient-to-br ${themeColor}` : ""}`}>
       {/* Toast */}
       {toastMessage && (
         <div className="fixed top-4 left-1/2 transform -translate-x-1/2 z-50 bg-gold/90 text-black px-4 py-2 rounded-lg font-semibold transition-opacity duration-300">
