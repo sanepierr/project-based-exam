@@ -91,7 +91,7 @@ class TMDBService:
         """
         Discover movies with flexible filters.
         Supports: with_genres, sort_by, primary_release_year,
-                  vote_average.gte, with_people, etc.
+                  vote_average.gte, with_people, with_keywords, etc.
         """
         return self._get("discover/movie", kwargs)
 
