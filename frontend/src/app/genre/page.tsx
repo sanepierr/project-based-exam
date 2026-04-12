@@ -14,6 +14,7 @@ export default function GenresPage() {
         Explore movies by genre. Genre pages support shareable links with sort and page in the URL
         so you can bookmark or send a list to friends.
       </p>
+      <p className="text-xs text-white/25 mb-10 font-mono">17 genres · TMDB-powered</p>
       <GenreGrid />
     </div>
   );
