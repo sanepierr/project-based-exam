@@ -151,7 +151,9 @@ function SearchContent() {
   }
 
   function handlePageChange(newPage: number) {
-    if (initialQuery) {
+    if (hasActiveFilters || filterSort !== "popularity.desc") {
+      applyFilters(newPage);
+    } else if (initialQuery) {
       performSearch(initialQuery, newPage);
     } else {
       loadCategory(sortParam || "trending", newPage);
@@ -166,6 +168,8 @@ function SearchContent() {
 
   const pageTitle = initialQuery
     ? `Results for "${initialQuery}"`
+    : hasActiveFilters
+    ? "Filtered Results"
     : categoryLabels[sortParam] || "Trending Movies";
 
   return (
