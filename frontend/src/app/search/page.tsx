@@ -105,6 +105,30 @@ function SearchContent() {
     }
   }
 
+  async function applyFilters(p: number = 1) {
+    setLoading(true);
+    try {
+      const params: Record<string, string | number> = { sort: filterSort, page: p };
+      if (filterGenre)      params.genre        = filterGenre;
+      if (filterYearFrom)   params.year_from    = filterYearFrom;
+      if (filterYearTo)     params.year_to      = filterYearTo;
+      if (filterRating)     params.rating_min   = filterRating;
+      if (filterRuntimeMin) params.runtime_min  = filterRuntimeMin;
+      if (filterRuntimeMax) params.runtime_max  = filterRuntimeMax;
+      if (filterLanguage)   params.language     = filterLanguage;
+
+      const data = await moviesAPI.discover(params);
+      setResults(data.results);
+      setTotalPages(data.total_pages || 1);
+      setTotalResults(data.total_results || 0);
+      setPage(p);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  }
+
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (query.trim()) performSearch(query, 1);
