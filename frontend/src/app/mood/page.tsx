@@ -35,6 +35,7 @@ function MoodContent() {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalResults, setTotalResults] = useState(0);
+  const [sortBy, setSortBy] = useState("popularity.desc");
   const [toastMessage, setToastMessage] = useState<string>("");
   const [focusedIndex, setFocusedIndex] = useState<number>(-1);
   const [showBackToTop, setShowBackToTop] = useState(false);
@@ -80,10 +81,10 @@ function MoodContent() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  async function fetchMoodMovies(slug: string, p: number) {
+  async function fetchMoodMovies(slug: string, p: number, sort?: string) {
     setLoading(true);
     try {
-      const data = await moviesAPI.getMoodMovies(slug, p);
+      const data = await moviesAPI.getMoodMovies(slug, p, sort || sortBy);
       setMovies(data.results || []);
       setMoodInfo(data.mood);
       setTotalPages(data.total_pages || 1);
@@ -181,11 +182,26 @@ function MoodContent() {
                 <h2 className="text-2xl font-bold font-display">{moodInfo.label}</h2>
                 <p className="text-sm text-white/30 mt-0.5">{moodInfo.description}</p>
               </div>
-              {totalResults > 0 && (
-                <div className="text-sm text-white/50">
-                  {totalResults.toLocaleString()} movies
-                </div>
-              )}
+              <div className="flex items-center gap-4">
+                {totalResults > 0 && (
+                  <div className="text-sm text-white/50">
+                    {totalResults.toLocaleString()} movies
+                  </div>
+                )}
+                <select
+                  value={sortBy}
+                  onChange={(e) => {
+                    setSortBy(e.target.value);
+                    fetchMoodMovies(activeMood, 1, e.target.value);
+                  }}
+                  className="px-3 py-1 rounded-lg bg-white/10 border border-white/20 text-sm text-white"
+                >
+                  <option value="popularity.desc">Most Popular</option>
+                  <option value="vote_average.desc">Highest Rated</option>
+                  <option value="release_date.desc">Newest</option>
+                  <option value="release_date.asc">Oldest</option>
+                </select>
+              </div>
             </div>
           )}
 
