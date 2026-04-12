@@ -37,6 +37,7 @@ function MoodContent() {
   const [totalResults, setTotalResults] = useState(0);
   const [sortBy, setSortBy] = useState("popularity.desc");
   const [favorites, setFavorites] = useState<string[]>([]);
+  const [history, setHistory] = useState<string[]>([]);
   const [toastMessage, setToastMessage] = useState<string>("");
   const [focusedIndex, setFocusedIndex] = useState<number>(-1);
   const [showBackToTop, setShowBackToTop] = useState(false);
@@ -45,6 +46,10 @@ function MoodContent() {
   useEffect(() => {
     if (!activeMood) return;
     fetchMoodMovies(activeMood, 1);
+    // Update history
+    const newHistory = [activeMood, ...history.filter(h => h !== activeMood)].slice(0, 5);
+    setHistory(newHistory);
+    localStorage.setItem("moodHistory", JSON.stringify(newHistory));
   }, [activeMood]);
 
   useEffect(() => {
@@ -85,6 +90,8 @@ function MoodContent() {
   useEffect(() => {
     const saved = localStorage.getItem("moodFavorites");
     if (saved) setFavorites(JSON.parse(saved));
+    const savedHistory = localStorage.getItem("moodHistory");
+    if (savedHistory) setHistory(JSON.parse(savedHistory));
   }, []);
 
   async function fetchMoodMovies(slug: string, p: number, sort?: string) {
