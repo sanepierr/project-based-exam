@@ -21,6 +21,7 @@ export default function DirectorPage() {
   const [loading, setLoading] = useState(true);
   const [bioExpanded, setBioExpanded] = useState(false);
   const [filmFilter, setFilmFilter] = useState<FilmFilter>("all");
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     if (!personId) return;
