@@ -5,7 +5,7 @@ import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import {
   Sparkles, Heart, Zap, Flame, Brain, Smile, Ghost,
-  Mountain, Baby, BookOpen, ArrowLeft, Loader2, Shuffle,
+  Mountain, Baby, BookOpen, ArrowLeft, Loader2, Shuffle, Star,
 } from "lucide-react";
 import MovieCard, { MovieCardSkeleton } from "@/components/MovieCard";
 import { moviesAPI } from "@/lib/api";
@@ -36,6 +36,7 @@ function MoodContent() {
   const [totalPages, setTotalPages] = useState(1);
   const [totalResults, setTotalResults] = useState(0);
   const [sortBy, setSortBy] = useState("popularity.desc");
+  const [favorites, setFavorites] = useState<string[]>([]);
   const [toastMessage, setToastMessage] = useState<string>("");
   const [focusedIndex, setFocusedIndex] = useState<number>(-1);
   const [showBackToTop, setShowBackToTop] = useState(false);
@@ -79,6 +80,11 @@ function MoodContent() {
     };
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  useEffect(() => {
+    const saved = localStorage.getItem("moodFavorites");
+    if (saved) setFavorites(JSON.parse(saved));
   }, []);
 
   async function fetchMoodMovies(slug: string, p: number, sort?: string) {
@@ -188,6 +194,20 @@ function MoodContent() {
                     {totalResults.toLocaleString()} movies
                   </div>
                 )}
+                <button
+                  onClick={() => {
+                    const newFavorites = favorites.includes(activeMood)
+                      ? favorites.filter(f => f !== activeMood)
+                      : [...favorites, activeMood];
+                    setFavorites(newFavorites);
+                    localStorage.setItem("moodFavorites", JSON.stringify(newFavorites));
+                    setToastMessage(favorites.includes(activeMood) ? "Removed from favorites" : "Added to favorites");
+                    setTimeout(() => setToastMessage(""), 2000);
+                  }}
+                  className={`p-2 rounded-lg transition-colors ${favorites.includes(activeMood) ? "bg-yellow-500/20 text-yellow-400" : "bg-white/10 text-white/50 hover:text-white"}`}
+                >
+                  <Star className={`w-4 h-4 ${favorites.includes(activeMood) ? "fill-current" : ""}`} />
+                </button>
                 <select
                   value={sortBy}
                   onChange={(e) => {
