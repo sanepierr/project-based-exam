@@ -122,7 +122,7 @@ class PersonViewSet(viewsets.ReadOnlyModelViewSet):
 
 ## standalone endpoints
 
-@api_view(["POST"])
+@api_view(["GET"])
 @permission_classes([AllowAny])
 def search_movies(request):
     query = request.query_params.get("q", "").strip()
