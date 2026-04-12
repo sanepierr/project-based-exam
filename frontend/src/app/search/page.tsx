@@ -2,7 +2,7 @@
 
 import { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
-import { Search, Loader2, SlidersHorizontal, ChevronDown } from "lucide-react";
+import { Search, Loader2, SlidersHorizontal, ChevronDown, X } from "lucide-react";
 import MovieCard, { MovieCardSkeleton } from "@/components/MovieCard";
 import { moviesAPI } from "@/lib/api";
 import type { MovieCompact } from "@/types/movie";
@@ -105,6 +105,22 @@ function SearchContent() {
     }
   }
 
+  const hasActiveFilters = !!(
+    filterGenre || filterYearFrom || filterYearTo ||
+    filterRating || filterRuntimeMin || filterRuntimeMax || filterLanguage
+  );
+
+  function clearFilters() {
+    setFilterGenre("");
+    setFilterYearFrom("");
+    setFilterYearTo("");
+    setFilterRating("");
+    setFilterRuntimeMin("");
+    setFilterRuntimeMax("");
+    setFilterLanguage("");
+    setFilterSort("popularity.desc");
+  }
+
   async function applyFilters(p: number = 1) {
     setLoading(true);
     try {
@@ -173,10 +189,17 @@ function SearchContent() {
       <div className="flex items-center justify-center mb-8">
         <button
           onClick={() => setFiltersOpen(!filtersOpen)}
-          className="flex items-center gap-2 px-5 py-2.5 rounded-xl glass-card text-sm font-medium text-white/50 hover:text-white transition-all"
+          className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-medium transition-all ${
+            filtersOpen || hasActiveFilters
+              ? "bg-gold/15 border border-gold/25 text-gold"
+              : "glass-card text-white/50 hover:text-white"
+          }`}
         >
           <SlidersHorizontal className="w-4 h-4" />
           Advanced Filters
+          {hasActiveFilters && (
+            <span className="w-2 h-2 rounded-full bg-gold animate-pulse" />
+          )}
           <ChevronDown className={`w-3.5 h-3.5 transition-transform ${filtersOpen ? "rotate-180" : ""}`} />
         </button>
       </div>
@@ -289,6 +312,25 @@ function SearchContent() {
                 ))}
               </select>
             </div>
+          </div>
+
+          {/* Filter actions */}
+          <div className="flex items-center gap-3 pt-3 border-t border-white/[0.04]">
+            <button
+              onClick={() => applyFilters(1)}
+              className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-gold to-gold-dim text-surface-0 font-semibold text-sm hover:shadow-lg hover:shadow-gold/15 transition-all"
+            >
+              Apply Filters
+            </button>
+            {hasActiveFilters && (
+              <button
+                onClick={clearFilters}
+                className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl glass text-sm text-white/50 hover:text-white transition-colors"
+              >
+                <X className="w-3.5 h-3.5" />
+                Clear all
+              </button>
+            )}
           </div>
         </div>
       )}
