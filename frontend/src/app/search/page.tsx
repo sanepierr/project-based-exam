@@ -54,6 +54,8 @@ function SearchContent() {
   const [filterGenre, setFilterGenre] = useState("");
   const [filterYearFrom, setFilterYearFrom] = useState("");
   const [filterYearTo, setFilterYearTo] = useState("");
+  const [filterRating, setFilterRating] = useState("");
+  const [filterLanguage, setFilterLanguage] = useState("");
 
   useEffect(() => {
     if (initialQuery) {
@@ -196,6 +198,34 @@ function SearchContent() {
                   className="w-full h-10 px-3 rounded-xl bg-surface-2 border border-white/[0.08] text-white text-sm outline-none focus:border-gold/30 placeholder:text-white/20 transition-colors"
                 />
               </div>
+            </div>
+
+            {/* Min rating */}
+            <div>
+              <label className="text-[11px] uppercase tracking-wider text-white/30 font-semibold mb-1.5 block">
+                Min Rating {filterRating && <span className="text-gold">({filterRating}+)</span>}
+              </label>
+              <input
+                type="range"
+                value={filterRating || "0"}
+                onChange={(e) => setFilterRating(e.target.value === "0" ? "" : e.target.value)}
+                min="0" max="9" step="0.5"
+                className="w-full h-10 accent-amber-500 cursor-pointer"
+              />
+            </div>
+
+            {/* Language */}
+            <div>
+              <label className="text-[11px] uppercase tracking-wider text-white/30 font-semibold mb-1.5 block">Language</label>
+              <select
+                value={filterLanguage}
+                onChange={(e) => setFilterLanguage(e.target.value)}
+                className="w-full h-10 px-3 rounded-xl bg-surface-2 border border-white/[0.08] text-white text-sm outline-none focus:border-gold/30 transition-colors appearance-none cursor-pointer"
+              >
+                {LANGUAGES.map((l) => (
+                  <option key={l.value} value={l.value}>{l.label}</option>
+                ))}
+              </select>
             </div>
           </div>
         </div>
