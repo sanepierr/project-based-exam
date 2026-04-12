@@ -20,6 +20,7 @@ export default function DirectorPage() {
   const [person, setPerson] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [bioExpanded, setBioExpanded] = useState(false);
+  const [filmFilter, setFilmFilter] = useState<FilmFilter>("all");
 
   useEffect(() => {
     if (!personId) return;
