@@ -50,6 +50,11 @@ function SearchContent() {
   const [totalResults, setTotalResults] = useState(0);
   const [filtersOpen, setFiltersOpen] = useState(false);
 
+  // Filter state
+  const [filterGenre, setFilterGenre] = useState("");
+  const [filterYearFrom, setFilterYearFrom] = useState("");
+  const [filterYearTo, setFilterYearTo] = useState("");
+
   useEffect(() => {
     if (initialQuery) {
       performSearch(initialQuery, 1);
@@ -148,6 +153,53 @@ function SearchContent() {
           <ChevronDown className={`w-3.5 h-3.5 transition-transform ${filtersOpen ? "rotate-180" : ""}`} />
         </button>
       </div>
+
+      {/* Filters panel */}
+      {filtersOpen && (
+        <div className="glass-card rounded-2xl p-6 mb-10 animate-slide-up">
+          <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-gold/15 to-transparent" />
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-5">
+            {/* Genre */}
+            <div>
+              <label className="text-[11px] uppercase tracking-wider text-white/30 font-semibold mb-1.5 block">Genre</label>
+              <select
+                value={filterGenre}
+                onChange={(e) => setFilterGenre(e.target.value)}
+                className="w-full h-10 px-3 rounded-xl bg-surface-2 border border-white/[0.08] text-white text-sm outline-none focus:border-gold/30 transition-colors appearance-none cursor-pointer"
+              >
+                <option value="">All Genres</option>
+                {GENRE_LIST.map((g) => (
+                  <option key={g.id} value={g.id}>{g.name}</option>
+                ))}
+              </select>
+            </div>
+
+            {/* Year range */}
+            <div>
+              <label className="text-[11px] uppercase tracking-wider text-white/30 font-semibold mb-1.5 block">Year Range</label>
+              <div className="flex gap-2">
+                <input
+                  type="number"
+                  value={filterYearFrom}
+                  onChange={(e) => setFilterYearFrom(e.target.value)}
+                  placeholder="From"
+                  min="1900" max="2026"
+                  className="w-full h-10 px-3 rounded-xl bg-surface-2 border border-white/[0.08] text-white text-sm outline-none focus:border-gold/30 placeholder:text-white/20 transition-colors"
+                />
+                <input
+                  type="number"
+                  value={filterYearTo}
+                  onChange={(e) => setFilterYearTo(e.target.value)}
+                  placeholder="To"
+                  min="1900" max="2026"
+                  className="w-full h-10 px-3 rounded-xl bg-surface-2 border border-white/[0.08] text-white text-sm outline-none focus:border-gold/30 placeholder:text-white/20 transition-colors"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Title + count */}
       <div className="flex items-center justify-between mb-8">
