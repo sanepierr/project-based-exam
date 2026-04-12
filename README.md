@@ -2,7 +2,9 @@
 
 A full-stack movie discovery platform built with **Django REST Framework** (backend) and **Next.js** (frontend), powered by The Movie Database (TMDB) API.
 
+
 ## Project Structure
+
 
 ```
 ├── backend/          # Django REST API
