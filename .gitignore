@@ -27,3 +27,6 @@ Thumbs.db
 # Environment
 .env.local
 .env.production
+
+# Local assignment patches / prompts (keep out of repo unless you choose to add)
+commits/
