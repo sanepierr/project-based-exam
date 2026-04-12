@@ -9,6 +9,8 @@ import MovieCard, { MovieCardSkeleton } from "@/components/MovieCard";
 import { peopleAPI } from "@/lib/api";
 import { formatDate, posterUrl } from "@/lib/utils";
 
+type FilmFilter = "all" | "directed" | "acted";
+
 export default function DirectorPage() {
   const params = useParams();
   const personId = Number(params.id);
