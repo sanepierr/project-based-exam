@@ -4,10 +4,14 @@ import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowLeft, Calendar, MapPin, Film, Star, Users } from "lucide-react";
-import MovieCard, { MovieCardSkeleton } from "@/components/MovieCard";
+import {
+  ArrowLeft, Calendar, MapPin, Film, Star, Users, Link2, Check, ChevronDown, ExternalLink,
+} from "lucide-react";
+import MovieCard from "@/components/MovieCard";
 import { peopleAPI } from "@/lib/api";
-import { formatDate, posterUrl } from "@/lib/utils";
+import { formatDate } from "@/lib/utils";
+
+type FilmFilter = "all" | "directed" | "acted";
 
 export default function DirectorPage() {
   const params = useParams();
@@ -15,6 +19,9 @@ export default function DirectorPage() {
 
   const [person, setPerson] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [bioExpanded, setBioExpanded] = useState(false);
+  const [filmFilter, setFilmFilter] = useState<FilmFilter>("all");
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     if (!personId) return;

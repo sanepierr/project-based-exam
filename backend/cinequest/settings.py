@@ -9,11 +9,15 @@ load_dotenv()
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SECRET_KEY = 'django-insecure-hardcoded-key-change-me-please-12345'
+SECRET_KEY = os.environ.get(
+    "DJANGO_SECRET_KEY", "django-insecure-hardcoded-key-change-me-please-12345"
+)
 
 DEBUG = os.environ.get('DEBUG', 'True').lower() == 'true'
 
-ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')
+ALLOWED_HOSTS = os.environ.get(
+    "ALLOWED_HOSTS", "localhost,127.0.0.1,.onrender.com"
+).split(",")
 
 INSTALLED_APPS = [
     "django.contrib.admin",
@@ -26,7 +30,7 @@ INSTALLED_APPS = [
     "rest_framework_simplejwt",
     "corsheaders",
     "django_filters",
-    "movie.apps.MoviesConfig",
+    "movies.apps.MoviesConfig",
     "recommendations.apps.RecommendationsConfig",
     "users.apps.UsersConfig",
 ]
@@ -34,6 +38,7 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
+    "corsheaders.middleware.CorsMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
@@ -60,10 +65,9 @@ TEMPLATES = [
 WSGI_APPLICATION = "cinequest.wsgi.application"
 
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
-    }
+    "default": dj_database_url.config(
+        default=f"sqlite:///{BASE_DIR / 'db.sqlite3'}"
+    )
 }
 
 AUTH_USER_MODEL = "users.User"
@@ -103,9 +107,13 @@ SIMPLE_JWT = {
 }
 
 CORS_ALLOWED_ORIGINS = os.environ.get(
-    "CORS_ORIGINS", "http://localhost:3000,http://127.0.0.1:3000"
+    "CORS_ORIGINS",
+    "http://localhost:3000,http://localhost:3001,http://127.0.0.1:3000,http://127.0.0.1:3001",
 ).split(",")
 CORS_ALLOW_CREDENTIALS = True
+CORS_ALLOW_ALL_ORIGINS = not DEBUG and os.environ.get(
+    "CORS_ALLOW_ALL", "false"
+).lower() == "true"
 
 # TMDB API
 TMDB_API_KEY = os.environ.get("TMDB_API_KEY", "")
