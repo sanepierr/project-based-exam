@@ -13,7 +13,26 @@ export default function GenresPage() {
           <Clapperboard className="w-6 h-6 text-gold" />
           <h1 className="text-3xl font-bold font-display">Browse by Genre</h1>
         </div>
-        <button onClick={() => setCopied(true)}>Copy</button>
+        <button
+          type="button"
+          onClick={async () => {
+            try {
+              await navigator.clipboard.writeText(window.location.href);
+              setCopied(true);
+              setTimeout(() => setCopied(false), 2000);
+            } catch {
+              /* ignore */
+            }
+          }}
+          className="inline-flex items-center gap-2 h-10 px-4 rounded-xl glass-card text-xs font-medium text-white/70 hover:text-white self-start"
+        >
+          {copied ? (
+            <Check className="w-3.5 h-3.5 text-emerald-400" />
+          ) : (
+            <Link2 className="w-3.5 h-3.5" />
+          )}
+          {copied ? "Copied" : "Copy link to genres"}
+        </button>
       </div>
       <p className="text-white/50 mb-6 max-w-xl">
         Explore movies by genre. Genre pages support shareable links with sort and page in the URL
