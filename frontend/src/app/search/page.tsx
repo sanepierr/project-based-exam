@@ -56,6 +56,9 @@ function SearchContent() {
   const [filterYearTo, setFilterYearTo] = useState("");
   const [filterRating, setFilterRating] = useState("");
   const [filterLanguage, setFilterLanguage] = useState("");
+  const [filterRuntimeMin, setFilterRuntimeMin] = useState("");
+  const [filterRuntimeMax, setFilterRuntimeMax] = useState("");
+  const [filterSort, setFilterSort] = useState("popularity.desc");
 
   useEffect(() => {
     if (initialQuery) {
@@ -104,9 +107,7 @@ function SearchContent() {
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (query.trim()) {
-      performSearch(query, 1);
-    }
+    if (query.trim()) performSearch(query, 1);
   }
 
   function handlePageChange(newPage: number) {
@@ -224,6 +225,43 @@ function SearchContent() {
               >
                 {LANGUAGES.map((l) => (
                   <option key={l.value} value={l.value}>{l.label}</option>
+                ))}
+              </select>
+            </div>
+
+            {/* Runtime */}
+            <div>
+              <label className="text-[11px] uppercase tracking-wider text-white/30 font-semibold mb-1.5 block">Runtime (min)</label>
+              <div className="flex gap-2">
+                <input
+                  type="number"
+                  value={filterRuntimeMin}
+                  onChange={(e) => setFilterRuntimeMin(e.target.value)}
+                  placeholder="Min"
+                  min="0"
+                  className="w-full h-10 px-3 rounded-xl bg-surface-2 border border-white/[0.08] text-white text-sm outline-none focus:border-gold/30 placeholder:text-white/20 transition-colors"
+                />
+                <input
+                  type="number"
+                  value={filterRuntimeMax}
+                  onChange={(e) => setFilterRuntimeMax(e.target.value)}
+                  placeholder="Max"
+                  min="0"
+                  className="w-full h-10 px-3 rounded-xl bg-surface-2 border border-white/[0.08] text-white text-sm outline-none focus:border-gold/30 placeholder:text-white/20 transition-colors"
+                />
+              </div>
+            </div>
+
+            {/* Sort */}
+            <div>
+              <label className="text-[11px] uppercase tracking-wider text-white/30 font-semibold mb-1.5 block">Sort By</label>
+              <select
+                value={filterSort}
+                onChange={(e) => setFilterSort(e.target.value)}
+                className="w-full h-10 px-3 rounded-xl bg-surface-2 border border-white/[0.08] text-white text-sm outline-none focus:border-gold/30 transition-colors appearance-none cursor-pointer"
+              >
+                {SORT_OPTIONS.map((s) => (
+                  <option key={s.value} value={s.value}>{s.label}</option>
                 ))}
               </select>
             </div>
