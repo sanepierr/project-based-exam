@@ -27,8 +27,7 @@ function GenreContent() {
     ? sortParam
     : "popularity.desc";
 
-  // Ensure accurate pagination boundaries
-  const initialPage = Math.max(1, Number.parseInt(searchParams.get("page") || "1", 10) || 1);
+  const page = Math.max(1, Number.parseInt(searchParams.get("page") || "1", 10) || 1);
 
   const [movies, setMovies] = useState<MovieCompact[]>([]);
   const [loading, setLoading] = useState(true);
@@ -58,26 +57,31 @@ function GenreContent() {
   };
 
   useEffect(() => {
-    async function fetchMovies() {
+    let cancelled = false;
+    async function load() {
       setLoading(true);
       setLoadError(false);
       try {
         const data = await genresAPI.getMovies(slug, page, sort);
-        setMovies(data.results || []);
-        setTotalPages(data.total_pages || 1);
+        if (!cancelled) {
+          setMovies(data.results || []);
+          setTotalPages(data.total_pages || 1);
+        }
       } catch (err) {
         console.error(err);
-        setLoadError(true);
-        setMovies([]);
-        setTotalPages(1);
+        if (!cancelled) {
+          setLoadError(true);
+          setMovies([]);
+          setTotalPages(1);
+        }
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     }
-  }, [slug, page, sort]);
-
-  useEffect(() => {
-    fetchMovies();
+    load();
+    return () => {
+      cancelled = true;
+    };
   }, [slug, page, sort]);
 
   return (
@@ -143,7 +147,7 @@ function GenreContent() {
             <MovieCardSkeleton key={i} />
           ))}
         </div>
-      ) : error ? null : movies.length === 0 ? (
+      ) : loadError ? null : movies.length === 0 ? (
         <div className="text-center py-16 rounded-2xl border border-white/[0.06] bg-white/[0.02]">
           <p className="text-white/40 mb-2">No movies found for this genre yet.</p>
           <p className="text-sm text-white/25">Try another sort or sync more data from the backend.</p>

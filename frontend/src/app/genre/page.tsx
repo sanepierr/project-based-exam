@@ -40,6 +40,6 @@ export default function GenresPage() {
       </p>
       <p className="text-xs text-white/25 mb-10 font-mono">17 genres · TMDB-powered</p>
       <GenreGrid />
-    </main>
+    </div>
   );
 }
