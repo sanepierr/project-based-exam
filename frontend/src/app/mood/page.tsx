@@ -68,6 +68,7 @@ function MoodContent() {
     };
   }, [activeMood, page]);
 
+  // Updates the URL with the selected mood and page without triggering a full navigation
   const setMoodPage = (p: number) => {
     router.replace(`/mood?mood=${encodeURIComponent(activeMood)}&page=${p}`, {
       scroll: false,
