@@ -202,7 +202,7 @@ function MoodContent() {
         </div>
       )}
 
-      {/* Empty state */}
+      {/* Empty state — shown when no mood has been selected yet */}
       {!activeMood && (
         <div className="text-center py-10 text-white/20">
           <Sparkles className="w-10 h-10 mx-auto mb-3 opacity-30" />
