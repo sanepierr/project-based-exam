@@ -4,7 +4,9 @@ import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowLeft, Calendar, MapPin, Film, Star, Users } from "lucide-react";
+import {
+  ArrowLeft, Calendar, MapPin, Film, Star, Users, Link2, Check, ChevronDown, ExternalLink,
+} from "lucide-react";
 import MovieCard from "@/components/MovieCard";
 import { peopleAPI } from "@/lib/api";
 import { formatDate } from "@/lib/utils";
