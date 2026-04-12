@@ -5,7 +5,7 @@ import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import {
   Sparkles, Heart, Zap, Flame, Brain, Smile, Ghost,
-  Mountain, Baby, BookOpen, ArrowLeft, Loader2, Shuffle, Star,
+  Mountain, Baby, BookOpen, ArrowLeft, Loader2, Shuffle, Star, Share,
 } from "lucide-react";
 import MovieCard, { MovieCardSkeleton } from "@/components/MovieCard";
 import { moviesAPI } from "@/lib/api";
@@ -214,6 +214,17 @@ function MoodContent() {
                   className={`p-2 rounded-lg transition-colors ${favorites.includes(activeMood) ? "bg-yellow-500/20 text-yellow-400" : "bg-white/10 text-white/50 hover:text-white"}`}
                 >
                   <Star className={`w-4 h-4 ${favorites.includes(activeMood) ? "fill-current" : ""}`} />
+                </button>
+                <button
+                  onClick={() => {
+                    const url = `${window.location.origin}/mood?mood=${activeMood}`;
+                    navigator.clipboard.writeText(url);
+                    setToastMessage("Link copied to clipboard!");
+                    setTimeout(() => setToastMessage(""), 2000);
+                  }}
+                  className="p-2 rounded-lg bg-white/10 text-white/50 hover:text-white transition-colors"
+                >
+                  <Share className="w-4 h-4" />
                 </button>
                 <select
                   value={sortBy}
