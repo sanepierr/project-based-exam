@@ -167,6 +167,24 @@ export const moviesAPI = {
 
   compare: (id1: number, id2: number) =>
     apiFetch<{ movies: any[] }>(`/movies/compare/?ids=${id1},${id2}`),
+
+  describe: (description: string, page = 1) =>
+    apiFetch<{
+      results: MovieCompact[];
+      total_pages: number;
+      page: number;
+      chips: {
+        term: string;
+        keyword_id: number | null;
+        keyword_name: string | null;
+      }[];
+      detected_mood: { slug: string; label: string } | null;
+      description: string;
+      fallback: boolean;
+    }>("/movies/describe/", {
+      method: "POST",
+      body: JSON.stringify({ description, page }),
+    }),
 };
 
 // Genres API

@@ -11,7 +11,7 @@ A full-stack movie discovery platform built with **Django REST Framework** (back
 │   ├── users/        # Custom user model & auth
 │   └── recommendations/  # Recommendation engine & watchlist
 ├── frontend/         # Next.js application
-│   ├── src/app/      # Pages (home, search, movie detail, etc.)
+│   ├── src/app/      # Pages (home, search, describe, movie detail, etc.)
 │   ├── src/components/  # Reusable UI components
 │   ├── src/lib/      # API client, auth context, utilities
 │   └── src/types/    # TypeScript type definitions
@@ -39,13 +39,18 @@ npm run dev
 ```
 
 ### Environment Variables
-Create a `.env` file in the `backend/` directory:
-```
-TMDB_API_KEY=your_tmdb_api_key_here
-DJANGO_SECRET_KEY=your_secret_key_here
-DEBUG=True
-```
+Copy the root [`.env.example`](./.env.example) to `backend/.env` and set values (never commit real secrets):
+
+- `TMDB_API_KEY` — required for TMDB and `sync_movies`
+- `DJANGO_SECRET_KEY` — set a strong value in production
+- `DATABASE_URL` — optional locally (defaults to SQLite); use Postgres in production
+- `CORS_ORIGINS` — include your Next.js origin(s)
+
+The frontend uses `NEXT_PUBLIC_API_URL` (e.g. `http://localhost:8000/api`) so the browser calls the correct API base URL.
+
+## Deployment (backend)
+
+The repo includes a [`Procfile`](./Procfile) (release migrations + `gunicorn`) and [`build.sh`](./build.sh) to install Python dependencies and run `collectstatic`. On your host, set the same variables as in `.env.example`, especially `DATABASE_URL`, `DJANGO_SECRET_KEY`, `ALLOWED_HOSTS`, and `CORS_ORIGINS` pointing at your deployed frontend URL.
 
 ## TMDB API
 Get your free API key at: https://www.themoviedb.org/settings/api
-# project-based-exam
