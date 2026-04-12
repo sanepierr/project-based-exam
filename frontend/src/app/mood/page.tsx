@@ -34,6 +34,7 @@ function MoodContent() {
   const [loading, setLoading] = useState(false);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [totalResults, setTotalResults] = useState(0);
   const [toastMessage, setToastMessage] = useState<string>("");
   const [focusedIndex, setFocusedIndex] = useState<number>(-1);
   const [showBackToTop, setShowBackToTop] = useState(false);
@@ -86,6 +87,7 @@ function MoodContent() {
       setMovies(data.results || []);
       setMoodInfo(data.mood);
       setTotalPages(data.total_pages || 1);
+      setTotalResults(data.total_results || 0);
       setPage(p);
     } catch (err) {
       console.error(err);
@@ -179,6 +181,11 @@ function MoodContent() {
                 <h2 className="text-2xl font-bold font-display">{moodInfo.label}</h2>
                 <p className="text-sm text-white/30 mt-0.5">{moodInfo.description}</p>
               </div>
+              {totalResults > 0 && (
+                <div className="text-sm text-white/50">
+                  {totalResults.toLocaleString()} movies
+                </div>
+              )}
             </div>
           )}
 
