@@ -146,6 +146,7 @@ function MoodContent() {
                   }
                 }}
                 aria-label="Copy shareable mood link to clipboard"
+                title="Copy a shareable link to this mood and page"
                 className="inline-flex items-center gap-2 h-10 px-4 rounded-xl glass-card text-xs font-medium text-white/70 hover:text-white self-start"
               >
                 {copied ? (
