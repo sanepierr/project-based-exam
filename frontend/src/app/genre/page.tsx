@@ -8,9 +8,11 @@ export default function GenresPage() {
   const [copied, setCopied] = useState(false);
   return (
     <div className="pt-24 pb-20 px-6 md:px-12 lg:px-20 max-w-[1400px] mx-auto">
-      <div className="flex items-center gap-3 mb-8">
-        <Clapperboard className="w-6 h-6 text-gold" />
-        <h1 className="text-3xl font-bold font-display">Browse by Genre</h1>
+      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-8">
+        <div className="flex items-center gap-3">
+          <Clapperboard className="w-6 h-6 text-gold" />
+          <h1 className="text-3xl font-bold font-display">Browse by Genre</h1>
+        </div>
         <button onClick={() => setCopied(true)}>Copy</button>
       </div>
       <p className="text-white/50 mb-6 max-w-xl">
