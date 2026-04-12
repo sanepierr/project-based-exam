@@ -198,7 +198,9 @@ def movie_detail_tmdb(request, tmdb_id):
 
     data = tmdb.get_movie_details(tmdb_id)
     if not data:
-        return Response({"error": "Movie not found"}, status=404)
+        return Response(
+            {"error": "Movie not found"}, status=status.HTTP_404_NOT_FOUND
+        )
 
     return Response(data)
 
