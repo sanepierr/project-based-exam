@@ -7,7 +7,7 @@ import Link from "next/link";
 import { ArrowLeft, Calendar, MapPin, Film, Star, Users } from "lucide-react";
 import MovieCard from "@/components/MovieCard";
 import { peopleAPI } from "@/lib/api";
-import { formatDate, posterUrl } from "@/lib/utils";
+import { formatDate } from "@/lib/utils";
 
 type FilmFilter = "all" | "directed" | "acted";
 
