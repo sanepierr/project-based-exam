@@ -44,12 +44,11 @@ export default function GenreGrid() {
     <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-8 gap-3">
       {GENRES.map((genre, i) => {
         const Icon = genre.icon;
-          const href = `/genre/${genre.slug}?id=${genre.id}`;
-          return (
-            <Link
-              key={genre.id}
-              href={href}
-              aria-label={`Browse ${genre.name} movies`}
+        return (
+          <Link
+            key={genre.id}
+            href={`/genre/${genre.slug}?id=${genre.id}`}
+            aria-label={`Browse ${genre.name} movies`}
             className={`genre-card glass-card group relative overflow-hidden rounded-xl p-4 flex flex-col items-center text-center gap-3 animate-slide-up stagger-${Math.min(i % 6 + 1, 6)}`}
           >
             <div className={`absolute inset-0 bg-gradient-to-br ${genre.gradient} opacity-0 group-hover:opacity-100 transition-opacity duration-500`} />
