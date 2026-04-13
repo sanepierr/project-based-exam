@@ -200,6 +200,29 @@ export default function DirectorPage() {
             View on TMDB
             <ExternalLink className="w-3.5 h-3.5" />
           </a>
+
+          {(directedMovies.length > 0 || actedMovies.length > 0) && (
+            <div className="flex flex-wrap gap-2 pt-4">
+              {[
+                { id: "all" as const, label: "All credits" },
+                ...(directedMovies.length > 0 ? [{ id: "directed" as const, label: "Directed only" }] : []),
+                ...(actedMovies.length > 0 ? [{ id: "acted" as const, label: "Acting only" }] : []),
+              ].map((tab) => (
+                <button
+                  key={tab.id}
+                  type="button"
+                  onClick={() => setFilmFilter(tab.id)}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
+                    filmFilter === tab.id
+                      ? "border-gold/40 bg-gold/10 text-gold"
+                      : "border-white/[0.08] text-white/45 hover:text-white/70"
+                  }`}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 
