@@ -191,6 +191,7 @@ function MoodContent() {
                   </button>
                   <span className="text-sm text-white/30 font-mono px-4">{page} / {Math.min(totalPages, 500)}</span>
                   <button
+                    type="button"
                     onClick={() => setMoodPage(page + 1)}
                     disabled={page >= totalPages}
                     aria-label="Go to next page"
