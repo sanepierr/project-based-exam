@@ -85,7 +85,25 @@ function GenreContent() {
         <ArrowLeft className="w-4 h-4" /> All Genres
       </Link>
 
-      <h1 className="text-3xl font-bold font-display mb-8">{genreName} Movies</h1>
+      <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-8">
+        <h1 className="text-3xl font-bold font-display">{genreName} Movies</h1>
+        <div className="flex flex-wrap items-center gap-3">
+          <label className="text-xs text-white/35 uppercase tracking-wider font-semibold">
+            Sort
+            <select
+              value={sort}
+              onChange={(e) => setSort(e.target.value)}
+              className="ml-2 mt-1 block w-full sm:w-auto min-w-[160px] h-10 px-3 rounded-xl bg-surface-2 border border-white/[0.08] text-sm text-white outline-none focus:border-gold/40"
+            >
+              {SORT_OPTIONS.map((o) => (
+                <option key={o.value} value={o.value}>
+                  {o.label}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
+      </div>
 
       {loading ? (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6">
