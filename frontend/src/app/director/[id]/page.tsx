@@ -76,6 +76,9 @@ export default function DirectorPage() {
   const directedMovies = person.directed_movies || [];
   const actedMovies = person.acted_movies || [];
 
+  const showDirected = filmFilter === "all" || filmFilter === "directed";
+  const showActed = filmFilter === "all" || filmFilter === "acted";
+
   return (
     <div className="pt-24 pb-20 max-w-6xl mx-auto px-6 md:px-12">
       <Link
