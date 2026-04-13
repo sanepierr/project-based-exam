@@ -32,6 +32,8 @@ function GenreContent() {
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(initialPage);
   const [totalPages, setTotalPages] = useState(1);
+  const [copied, setCopied] = useState(false);
+  const [loadError, setLoadError] = useState(false);
 
   const genreName = slug
     .split("-")
