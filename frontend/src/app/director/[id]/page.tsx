@@ -153,9 +153,27 @@ export default function DirectorPage() {
           </div>
 
           {person.biography && (
-            <p className="text-white/60 leading-relaxed max-w-2xl line-clamp-6">
-              {person.biography}
-            </p>
+            <div className="max-w-2xl">
+              <p
+                className={`text-white/60 leading-relaxed ${
+                  bioExpanded ? "" : "line-clamp-6"
+                }`}
+              >
+                {person.biography}
+              </p>
+              {person.biography.length > 280 && (
+                <button
+                  type="button"
+                  onClick={() => setBioExpanded((e) => !e)}
+                  className="mt-2 inline-flex items-center gap-1 text-xs font-medium text-gold/80 hover:text-gold"
+                >
+                  {bioExpanded ? "Show less" : "Read more"}
+                  <ChevronDown
+                    className={`w-3.5 h-3.5 transition-transform ${bioExpanded ? "rotate-180" : ""}`}
+                  />
+                </button>
+              )}
+            </div>
           )}
 
           <div className="flex gap-6 pt-2">
