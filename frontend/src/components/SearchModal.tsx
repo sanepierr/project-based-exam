@@ -1,7 +1,9 @@
 "use client";
 
-import { useEffect, useRef } from "react";
-import { Search, X } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import { Search, Loader2 } from "lucide-react";
+import { moviesAPI } from "@/lib/api";
+import type { MovieCompact } from "@/types/movie";
 
 interface SearchModalProps {
   open: boolean;
@@ -9,12 +11,18 @@ interface SearchModalProps {
 }
 
 export default function SearchModal({ open, onClose }: SearchModalProps) {
+  const [query, setQuery] = useState("");
+  const [results, setResults] = useState<MovieCompact[]>([]);
+  const [loading, setLoading] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // Focus input when modal opens, clear when it closes
+  // Focus input when modal opens, clear state when it closes
   useEffect(() => {
     if (open) {
       setTimeout(() => inputRef.current?.focus(), 100);
+    } else {
+      setQuery("");
+      setResults([]);
     }
   }, [open]);
 
@@ -30,6 +38,26 @@ export default function SearchModal({ open, onClose }: SearchModalProps) {
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
   }, [open, onClose]);
+
+  // Debounced search — fires 250ms after the user stops typing
+  useEffect(() => {
+    if (query.length < 2) {
+      setResults([]);
+      return;
+    }
+    const timer = setTimeout(async () => {
+      setLoading(true);
+      try {
+        const data = await moviesAPI.search(query);
+        setResults(data.results.slice(0, 6));
+      } catch {
+        setResults([]);
+      } finally {
+        setLoading(false);
+      }
+    }, 250);
+    return () => clearTimeout(timer);
+  }, [query]);
 
   if (!open) return null;
 
@@ -53,9 +81,12 @@ export default function SearchModal({ open, onClose }: SearchModalProps) {
             <input
               ref={inputRef}
               type="text"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
               placeholder="Search movies, directors, actors..."
               className="flex-1 bg-transparent text-white placeholder:text-white/25 outline-none text-lg font-body"
             />
+            {loading && <Loader2 className="w-5 h-5 text-gold/40 animate-spin" />}
             <button
               type="button"
               onClick={onClose}
