@@ -52,6 +52,8 @@ function MoodContent() {
   const [favorites, setFavorites] = useState<string[]>([]);
   const [history, setHistory] = useState<string[]>([]);
   const [recommended, setRecommended] = useState<typeof MOODS>([]);
+  const [infiniteScroll, setInfiniteScroll] = useState(false);
+  const [stats, setStats] = useState<{ averageRating: number; topGenres: string[] }>({ averageRating: 0, topGenres: [] });
   const [error, setError] = useState<string>("");
   const [toastMessage, setToastMessage] = useState<string>("");
   const [focusedIndex, setFocusedIndex] = useState<number>(-1);
@@ -112,16 +114,32 @@ function MoodContent() {
     if (savedHistory) setHistory(JSON.parse(savedHistory));
   }, []);
 
-  async function fetchMoodMovies(slug: string, p: number, sort?: string) {
+  async function fetchMoodMovies(slug: string, p: number, sort?: string, append = false) {
     setLoading(true);
     setError("");
     try {
       const data = await moviesAPI.getMoodMovies(slug, p, sort || sortBy);
-      setMovies(data.results || []);
+      const nextMovies = append ? [...movies, ...(data.results || [])] : (data.results || []);
+      setMovies(nextMovies);
       setMoodInfo(data.mood);
       setTotalPages(data.total_pages || 1);
       setTotalResults(data.total_results || 0);
       setPage(p);
+
+      const averageRating = nextMovies.length
+        ? nextMovies.reduce((sum, movie) => sum + movie.vote_average, 0) / nextMovies.length
+        : 0;
+      const genreCounts: Record<string, number> = {};
+      nextMovies.forEach((movie) => {
+        movie.genres?.forEach((genre) => {
+          genreCounts[genre.name] = (genreCounts[genre.name] || 0) + 1;
+        });
+      });
+      const topGenres = Object.entries(genreCounts)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 3)
+        .map(([name]) => name);
+      setStats({ averageRating: Number(averageRating.toFixed(1)), topGenres });
     } catch (err) {
       console.error(err);
       setError("Failed to load movies. Please try again.");
@@ -134,7 +152,11 @@ function MoodContent() {
     <div className={`pt-24 pb-20 px-6 md:px-10 lg:px-20 max-w-[1440px] mx-auto transition-all duration-500 ${themeColor ? `bg-gradient-to-br ${themeColor}` : ""}`}>
       {/* Toast */}
       {toastMessage && (
-        <div className="fixed top-4 left-1/2 transform -translate-x-1/2 z-50 bg-gold/90 text-black px-4 py-2 rounded-lg font-semibold transition-opacity duration-300">
+        <div
+          className="fixed top-4 left-1/2 transform -translate-x-1/2 z-50 bg-gold/90 text-black px-4 py-2 rounded-lg font-semibold transition-opacity duration-300"
+          role="status"
+          aria-live="polite"
+        >
           {toastMessage}
         </div>
       )}
@@ -189,6 +211,7 @@ function MoodContent() {
               className={`genre-card glass-card group relative overflow-hidden rounded-xl p-5 text-center transition-all duration-300 hover:scale-105 focus:outline-none focus:ring-2 focus:ring-gold/50 ${
                 isActive ? "ring-2 ring-gold/40 scale-[1.03]" : ""
               }`}
+              aria-label={`Select ${mood.label}`}
             >
               <div className={`absolute inset-0 bg-gradient-to-br ${mood.color} ${isActive ? "opacity-100" : "opacity-0 group-hover:opacity-100"} transition-opacity duration-500`} />
               <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-gold/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
@@ -263,8 +286,31 @@ function MoodContent() {
                     <option value="release_date.desc">Newest</option>
                     <option value="release_date.asc">Oldest</option>
                   </select>
+                  <label className="inline-flex items-center gap-2 text-sm text-white/50 ml-3">
+                    <input
+                      type="checkbox"
+                      checked={infiniteScroll}
+                      onChange={() => setInfiniteScroll((current) => !current)}
+                      className="h-4 w-4 rounded border-white/20 bg-white/10 text-gold focus:ring-gold/40"
+                      aria-label="Toggle infinite scroll"
+                    />
+                    Infinite scroll
+                  </label>
                 </div>
               </div>
+
+              {stats.averageRating > 0 && (
+                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 mb-8">
+                  <div className="rounded-3xl border border-white/10 bg-white/5 p-4">
+                    <p className="text-sm text-white/50">Average rating</p>
+                    <p className="text-2xl font-bold text-white mt-2">{stats.averageRating}</p>
+                  </div>
+                  <div className="rounded-3xl border border-white/10 bg-white/5 p-4 sm:col-span-2">
+                    <p className="text-sm text-white/50">Top genres</p>
+                    <p className="text-base text-white mt-2">{stats.topGenres.join(" • ") || "—"}</p>
+                  </div>
+                </div>
+              )}
 
               {recommended.length > 0 && (
                 <div className="flex flex-col gap-3">
@@ -305,13 +351,17 @@ function MoodContent() {
             </div>
           ) : (
             <>
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-5">
+              <div
+                className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-5"
+                style={{ opacity: loading ? 0.7 : 1, transition: "opacity 300ms ease" }}
+                aria-live="polite"
+              >
                 {movies.map((movie, i) => (
                   <MovieCard key={movie.id || movie.tmdb_id} movie={movie} showOverview index={i} />
                 ))}
               </div>
 
-              {totalPages > 1 && (
+              {totalPages > 1 && !infiniteScroll && (
                 <div className="flex items-center justify-center gap-3 mt-12">
                   <button
                     onClick={() => fetchMoodMovies(activeMood, page - 1)}
@@ -327,6 +377,18 @@ function MoodContent() {
                     className="px-5 py-2.5 rounded-xl glass-card text-sm font-medium disabled:opacity-30 disabled:cursor-not-allowed hover:bg-white/10 transition-colors disabled:hover:bg-transparent"
                   >
                     Next
+                  </button>
+                </div>
+              )}
+              {totalPages > 1 && infiniteScroll && (
+                <div className="flex justify-center mt-12">
+                  <button
+                    onClick={() => fetchMoodMovies(activeMood, page + 1, sortBy, true)}
+                    disabled={page >= totalPages}
+                    className="px-6 py-3 rounded-xl glass-card text-sm font-medium disabled:opacity-30 disabled:cursor-not-allowed hover:bg-white/10 transition-colors disabled:hover:bg-transparent"
+                    aria-label="Load more movies"
+                  >
+                    Load more movies
                   </button>
                 </div>
               )}
