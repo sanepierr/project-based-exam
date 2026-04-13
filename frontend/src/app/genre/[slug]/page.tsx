@@ -47,6 +47,7 @@ function GenreContent() {
     router.replace(`/genre/${slug}?${q.toString()}`, { scroll: false });
   };
 
+  // safely update page state maintaining other search params
   const setPageSafe = (p: number) => {
     const q = new URLSearchParams();
     if (genreId) q.set("id", genreId);
