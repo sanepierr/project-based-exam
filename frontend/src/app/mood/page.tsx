@@ -119,7 +119,7 @@ function MoodContent() {
         })}
       </div>
 
-      {/* Results */}
+      {/* Results section — only rendered when a mood is actively selected */}
       {activeMood && (
         <div>
           {/* Error banner shown when mood movie fetch fails */}
