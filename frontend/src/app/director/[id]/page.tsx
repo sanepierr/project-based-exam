@@ -242,7 +242,7 @@ export default function DirectorPage() {
       )}
 
       {/* Acted in */}
-      {actedMovies.length > 0 && (
+      {actedMovies.length > 0 && showActed && (
         <section>
           <h2 className="text-xl font-bold font-display flex items-center gap-2 mb-6">
             <Users className="w-5 h-5 text-gold" />
