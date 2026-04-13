@@ -413,7 +413,10 @@ def compare_movies(request):
             movies.append(data)
 
     if len(movies) < 2:
-        return Response({"error": "Could not fetch both movies"}, status=404)
+        return Response(
+            {"error": "Could not fetch both movies"},
+            status=status.HTTP_404_NOT_FOUND,
+        )
 
     return Response({"movies": movies})
 
