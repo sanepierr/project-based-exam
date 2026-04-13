@@ -181,6 +181,7 @@ function MoodContent() {
               {totalPages > 1 && (
                 <div className="flex items-center justify-center gap-3 mt-12">
                   <button
+                    type="button"
                     onClick={() => setMoodPage(page - 1)}
                     disabled={page <= 1}
                     aria-label="Go to previous page"
