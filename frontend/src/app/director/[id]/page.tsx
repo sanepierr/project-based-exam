@@ -81,12 +81,14 @@ export default function DirectorPage() {
 
   return (
     <div className="pt-24 pb-20 max-w-6xl mx-auto px-6 md:px-12">
-      <Link
-        href="/search"
-        className="inline-flex items-center gap-2 text-sm text-white/40 hover:text-white/70 mb-6"
-      >
-        <ArrowLeft className="w-4 h-4" /> Back
-      </Link>
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
+        <Link
+          href="/search"
+          className="inline-flex items-center gap-2 text-sm text-white/40 hover:text-white/70"
+        >
+          <ArrowLeft className="w-4 h-4" /> Back
+        </Link>
+      </div>
 
       {/* Header */}
       <div className="flex flex-col sm:flex-row gap-8 mb-12">
