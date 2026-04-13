@@ -31,6 +31,8 @@ function GenreContent() {
   const [movies, setMovies] = useState<MovieCompact[]>([]);
   const [loading, setLoading] = useState(true);
   const [totalPages, setTotalPages] = useState(1);
+  const [copied, setCopied] = useState(false);
+  const [loadError, setLoadError] = useState(false);
 
   const genreName = slug
     .split("-")
