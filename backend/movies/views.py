@@ -401,7 +401,10 @@ def compare_movies(request):
     ids = [int(i.strip()) for i in ids_str.split(",") if i.strip().isdigit()]
 
     if len(ids) < 2:
-        return Response({"error": "Provide at least 2 TMDB IDs: ?ids=550,680"}, status=400)
+        return Response(
+            {"error": "Provide at least 2 TMDB IDs: ?ids=550,680"},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
 
     movies = []
     for tmdb_id in ids[:2]:
