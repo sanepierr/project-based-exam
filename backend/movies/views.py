@@ -763,6 +763,46 @@ def mood_movies(request, mood_slug):
     })
 
 
+@api_view(["GET"])
+@permission_classes([AllowAny])
+def movie_videos(request, tmdb_id):
+    """Fetch trailer and video data for a movie from TMDB."""
+    data = tmdb.get_movie_details(tmdb_id)
+    if not data:
+        return Response(
+            {"error": "Movie not found"},
+            status=status.HTTP_404_NOT_FOUND,
+        )
+
+    videos = data.get("videos", {}).get("results", [])
+    trailers = [
+        v for v in videos
+        if v.get("site") == "YouTube" and v.get("type") in ("Trailer", "Teaser")
+    ]
+    trailers.sort(key=lambda v: v.get("type") == "Trailer", reverse=True)
+
+    primary = trailers[0] if trailers else None
+    return Response({
+        "tmdb_id": tmdb_id,
+        "trailer": {
+            "key": primary["key"],
+            "name": primary.get("name", ""),
+            "type": primary.get("type", ""),
+            "embed_url": f"https://www.youtube.com/embed/{primary['key']}",
+            "watch_url": f"https://www.youtube.com/watch?v={primary['key']}",
+        } if primary else None,
+        "all_videos": [
+            {
+                "key": v["key"],
+                "name": v.get("name", ""),
+                "type": v.get("type", ""),
+                "site": v.get("site", ""),
+            }
+            for v in videos[:10]
+        ],
+    })
+
+
 ### advanced discover / filters
 @api_view(["GET"])
 @permission_classes([AllowAny])
