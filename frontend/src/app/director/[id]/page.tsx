@@ -227,7 +227,7 @@ export default function DirectorPage() {
       </div>
 
       {/* Directed movies */}
-      {directedMovies.length > 0 && (
+      {directedMovies.length > 0 && showDirected && (
         <section className="mb-12">
           <h2 className="text-xl font-bold font-display flex items-center gap-2 mb-6">
             <Film className="w-5 h-5 text-gold" />
