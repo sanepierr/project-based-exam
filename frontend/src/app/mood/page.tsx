@@ -104,7 +104,7 @@ function MoodContent() {
           return (
             <button
               key={mood.slug}
-              onClick={() => router.push(`/mood?mood=${mood.slug}&page=1`)}
+              onClick={() => router.push(`/mood?mood=${mood.slug}&page=${MIN_PAGE}`)}
               className={`genre-card glass-card group relative overflow-hidden rounded-xl p-5 text-center transition-all duration-300 ${
                 isActive ? "ring-2 ring-gold/40 scale-[1.03]" : ""
               }`}
