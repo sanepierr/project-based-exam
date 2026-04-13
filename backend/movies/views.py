@@ -315,7 +315,9 @@ def mood_list(request):
 def mood_movies(request, mood_slug):
     mood = MOOD_MAP.get(mood_slug)
     if not mood:
-        return Response({"error": "Unknown mood"}, status=404)
+        return Response(
+            {"error": "Unknown mood"}, status=status.HTTP_404_NOT_FOUND
+        )
 
     page = int(request.query_params.get("page", 1))
     params = {
