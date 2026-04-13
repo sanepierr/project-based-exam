@@ -8,6 +8,14 @@ import { moviesAPI } from "@/lib/api";
 import { posterUrl } from "@/lib/utils";
 import type { MovieCompact } from "@/types/movie";
 
+const SEARCH_HINTS = [
+  "Inception",
+  "Parasite",
+  "Spider-Man",
+  "Hayao Miyazaki",
+  "Studio Ghibli",
+];
+
 interface SearchModalProps {
   open: boolean;
   onClose: () => void;
@@ -19,9 +27,9 @@ export default function SearchModal({ open, onClose }: SearchModalProps) {
   const [loading, setLoading] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(-1);
   const inputRef = useRef<HTMLInputElement>(null);
+  const requestIdRef = useRef(0);
   const router = useRouter();
 
-  // Focus input when modal opens, clear state when it closes
   useEffect(() => {
     if (open) {
       setTimeout(() => inputRef.current?.focus(), 100);
@@ -32,12 +40,14 @@ export default function SearchModal({ open, onClose }: SearchModalProps) {
     }
   }, [open]);
 
-  // Ctrl/Cmd+K toggles modal; Escape closes it
+  // Keyboard shortcuts
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if (e.key === "k" && (e.metaKey || e.ctrlKey)) {
         e.preventDefault();
-        if (open) onClose();
+        if (open) {
+          onClose();
+        }
       }
       if (e.key === "Escape" && open) onClose();
     };
@@ -45,27 +55,39 @@ export default function SearchModal({ open, onClose }: SearchModalProps) {
     return () => window.removeEventListener("keydown", handler);
   }, [open, onClose]);
 
-  // Debounced search — fires 250ms after the user stops typing
+  // Debounced search
+  useEffect(() => {
+    if (selectedIndex >= results.length) {
+      setSelectedIndex(results.length - 1);
+    }
+  }, [results, selectedIndex]);
+
   useEffect(() => {
     if (query.length < 2) {
       setResults([]);
       return;
     }
+    requestIdRef.current += 1;
+    const activeRequestId = requestIdRef.current;
     const timer = setTimeout(async () => {
       setLoading(true);
       try {
         const data = await moviesAPI.search(query);
+        if (activeRequestId !== requestIdRef.current) return;
         setResults(data.results.slice(0, 6));
       } catch {
+        if (activeRequestId !== requestIdRef.current) return;
         setResults([]);
       } finally {
-        setLoading(false);
+        if (activeRequestId === requestIdRef.current) {
+          setLoading(false);
+        }
       }
     }, 250);
     return () => clearTimeout(timer);
   }, [query]);
 
-  // Arrow-key navigation through results + Enter to select
+  // Keyboard nav in results
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "ArrowDown") {
       e.preventDefault();
@@ -79,7 +101,6 @@ export default function SearchModal({ open, onClose }: SearchModalProps) {
     }
   };
 
-  // Navigate to movie detail page
   const handleSelect = useCallback(
     (tmdbId: number) => {
       router.push(`/movie/${tmdbId}`);
@@ -88,7 +109,6 @@ export default function SearchModal({ open, onClose }: SearchModalProps) {
     [router, onClose]
   );
 
-  // Submit full search — navigate to search results page
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (query.trim()) {
@@ -113,8 +133,12 @@ export default function SearchModal({ open, onClose }: SearchModalProps) {
           {/* Shine line */}
           <div className="h-px bg-gradient-to-r from-transparent via-gold/20 to-transparent" />
 
-          {/* Search input */}
-          <form onSubmit={handleSubmit} className="flex items-center gap-3 px-5 py-4" onKeyDown={handleKeyDown}>
+          {/* Search Input */}
+          <form
+            onSubmit={handleSubmit}
+            className="flex items-center gap-3 px-5 py-4"
+            onKeyDown={handleKeyDown}
+          >
             <Search className="w-5 h-5 text-gold/40 flex-shrink-0" />
             <input
               ref={inputRef}
@@ -125,13 +149,15 @@ export default function SearchModal({ open, onClose }: SearchModalProps) {
                 setSelectedIndex(-1);
               }}
               placeholder="Search movies, directors, actors..."
-              className="flex-1 bg-transparent text-white placeholder:text-white/25 outline-none text-lg font-body"
+              aria-label="Search movies, directors, and actors"
+              className="flex-1 bg-transparent text-white placeholder:text-white/25 outline-none text-lg font-body focus-visible:ring-1 focus-visible:ring-gold/30 rounded-md"
             />
             {loading && <Loader2 className="w-5 h-5 text-gold/40 animate-spin" />}
             <button
               type="button"
               onClick={onClose}
-              className="text-[10px] text-white/20 px-2 py-1 rounded border border-white/8 font-mono hover:border-white/15 transition-colors"
+              aria-label="Close search modal"
+              className="text-[10px] text-white/20 px-2 py-1 rounded border border-white/8 font-mono hover:border-white/15 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-gold/30 transition-colors"
             >
               ESC
             </button>
@@ -142,9 +168,9 @@ export default function SearchModal({ open, onClose }: SearchModalProps) {
             <div className="h-px bg-white/[0.04]" />
           )}
 
-          {/* Results list */}
+          {/* Results */}
           {results.length > 0 && (
-            <div className="max-h-[45vh] overflow-y-auto p-2">
+            <div className="max-h-[45vh] overflow-y-auto p-2" role="listbox" aria-label="Search results">
               <p className="text-[10px] uppercase tracking-wider text-white/20 px-3 py-2 font-semibold">
                 Movies
               </p>
@@ -152,13 +178,14 @@ export default function SearchModal({ open, onClose }: SearchModalProps) {
                 <button
                   key={movie.id || movie.tmdb_id}
                   onClick={() => handleSelect(movie.tmdb_id || movie.id)}
-                  className={`w-full flex items-center gap-4 p-3 rounded-xl transition-all text-left ${
+                  role="option"
+                  aria-selected={i === selectedIndex}
+                  className={`w-full flex items-center gap-4 p-3 rounded-xl transition-all text-left focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-gold/40 ${
                     i === selectedIndex
-                      ? "bg-gold/10 border border-gold/15"
+                      ? "bg-gold/10 border border-gold/15 ring-1 ring-gold/20"
                       : "hover:bg-white/[0.04] border border-transparent"
                   }`}
                 >
-                  {/* Poster */}
                   <div className="w-11 h-[66px] rounded-lg overflow-hidden bg-surface-3 flex-shrink-0 border border-white/5">
                     <Image
                       src={posterUrl(movie.poster_url || (movie as any).poster_path, "w185")}
@@ -169,8 +196,6 @@ export default function SearchModal({ open, onClose }: SearchModalProps) {
                       unoptimized
                     />
                   </div>
-
-                  {/* Info */}
                   <div className="flex-1 min-w-0">
                     <h4 className="text-sm font-semibold truncate text-white/90">
                       {movie.title}
@@ -188,10 +213,10 @@ export default function SearchModal({ open, onClose }: SearchModalProps) {
                 </button>
               ))}
 
-              {/* See all results */}
+              {/* See all */}
               <button
-                onClick={handleSubmit as any}
-                className="w-full flex items-center justify-center gap-2 text-sm text-gold/60 hover:text-gold py-3 transition-colors"
+                onClick={handleSubmit}
+                className="w-full flex items-center justify-center gap-2 text-sm text-gold/60 hover:text-gold py-3 rounded-lg focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-gold/40 transition-colors"
               >
                 See all results for &ldquo;{query}&rdquo;
                 <span className="text-gold/40">→</span>
@@ -206,27 +231,28 @@ export default function SearchModal({ open, onClose }: SearchModalProps) {
               <p className="text-sm text-white/25">
                 No movies found for &ldquo;{query}&rdquo;
               </p>
+              <p className="text-xs text-white/20 mt-1">
+                Try a title, cast member, or franchise keyword
+              </p>
             </div>
           )}
 
-          {/* Empty state hints */}
+          {/* Empty state */}
           {query.length < 2 && (
             <div className="p-4 pb-5">
               <p className="text-[10px] uppercase tracking-wider text-white/20 px-3 py-2 font-semibold">
                 Try searching for
               </p>
               <div className="flex flex-wrap gap-2 px-3">
-                {["Inception", "Christopher Nolan", "Sci-Fi", "The Godfather", "Studio Ghibli"].map(
-                  (hint) => (
-                    <button
-                      key={hint}
-                      onClick={() => setQuery(hint)}
-                      className="px-3 py-1.5 rounded-lg bg-white/[0.03] border border-white/[0.06] text-[12px] text-white/40 hover:text-white/60 hover:border-gold/15 transition-all"
-                    >
-                      {hint}
-                    </button>
-                  )
-                )}
+                {SEARCH_HINTS.map((hint) => (
+                  <button
+                    key={hint}
+                    onClick={() => setQuery(hint)}
+                    className="px-3 py-1.5 rounded-lg bg-white/[0.03] border border-white/[0.06] text-[12px] text-white/40 hover:text-white/60 hover:border-gold/15 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-gold/40 transition-all"
+                  >
+                    {hint}
+                  </button>
+                ))}
               </div>
             </div>
           )}
