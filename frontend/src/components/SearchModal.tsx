@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { Search, Loader2, Star } from "lucide-react";
 import { moviesAPI } from "@/lib/api";
@@ -18,6 +19,7 @@ export default function SearchModal({ open, onClose }: SearchModalProps) {
   const [loading, setLoading] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(-1);
   const inputRef = useRef<HTMLInputElement>(null);
+  const router = useRouter();
 
   // Focus input when modal opens, clear state when it closes
   useEffect(() => {
@@ -73,8 +75,25 @@ export default function SearchModal({ open, onClose }: SearchModalProps) {
       setSelectedIndex((i) => Math.max(i - 1, -1));
     } else if (e.key === "Enter" && selectedIndex >= 0) {
       e.preventDefault();
-      const movie = results[selectedIndex];
-      console.log("selected:", movie.tmdb_id || movie.id);
+      handleSelect(results[selectedIndex].tmdb_id || results[selectedIndex].id);
+    }
+  };
+
+  // Navigate to movie detail page
+  const handleSelect = useCallback(
+    (tmdbId: number) => {
+      router.push(`/movie/${tmdbId}`);
+      onClose();
+    },
+    [router, onClose]
+  );
+
+  // Submit full search — navigate to search results page
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (query.trim()) {
+      router.push(`/search?q=${encodeURIComponent(query.trim())}`);
+      onClose();
     }
   };
 
@@ -95,7 +114,7 @@ export default function SearchModal({ open, onClose }: SearchModalProps) {
           <div className="h-px bg-gradient-to-r from-transparent via-gold/20 to-transparent" />
 
           {/* Search input */}
-          <div className="flex items-center gap-3 px-5 py-4" onKeyDown={handleKeyDown}>
+          <form onSubmit={handleSubmit} className="flex items-center gap-3 px-5 py-4" onKeyDown={handleKeyDown}>
             <Search className="w-5 h-5 text-gold/40 flex-shrink-0" />
             <input
               ref={inputRef}
@@ -116,7 +135,7 @@ export default function SearchModal({ open, onClose }: SearchModalProps) {
             >
               ESC
             </button>
-          </div>
+          </form>
 
           {/* Divider */}
           {(results.length > 0 || (query.length >= 2 && !loading)) && (
@@ -132,6 +151,7 @@ export default function SearchModal({ open, onClose }: SearchModalProps) {
               {results.map((movie, i) => (
                 <button
                   key={movie.id || movie.tmdb_id}
+                  onClick={() => handleSelect(movie.tmdb_id || movie.id)}
                   className={`w-full flex items-center gap-4 p-3 rounded-xl transition-all text-left ${
                     i === selectedIndex
                       ? "bg-gold/10 border border-gold/15"
@@ -167,6 +187,15 @@ export default function SearchModal({ open, onClose }: SearchModalProps) {
                   </div>
                 </button>
               ))}
+
+              {/* See all results */}
+              <button
+                onClick={handleSubmit as any}
+                className="w-full flex items-center justify-center gap-2 text-sm text-gold/60 hover:text-gold py-3 transition-colors"
+              >
+                See all results for &ldquo;{query}&rdquo;
+                <span className="text-gold/40">→</span>
+              </button>
             </div>
           )}
 
