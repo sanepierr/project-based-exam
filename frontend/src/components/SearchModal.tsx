@@ -14,6 +14,7 @@ export default function SearchModal({ open, onClose }: SearchModalProps) {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<MovieCompact[]>([]);
   const [loading, setLoading] = useState(false);
+  const [selectedIndex, setSelectedIndex] = useState(-1);
   const inputRef = useRef<HTMLInputElement>(null);
 
   // Focus input when modal opens, clear state when it closes
@@ -23,6 +24,7 @@ export default function SearchModal({ open, onClose }: SearchModalProps) {
     } else {
       setQuery("");
       setResults([]);
+      setSelectedIndex(-1);
     }
   }, [open]);
 
@@ -59,6 +61,21 @@ export default function SearchModal({ open, onClose }: SearchModalProps) {
     return () => clearTimeout(timer);
   }, [query]);
 
+  // Arrow-key navigation through results + Enter to select
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      setSelectedIndex((i) => Math.min(i + 1, results.length - 1));
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      setSelectedIndex((i) => Math.max(i - 1, -1));
+    } else if (e.key === "Enter" && selectedIndex >= 0) {
+      e.preventDefault();
+      const movie = results[selectedIndex];
+      console.log("selected:", movie.tmdb_id || movie.id);
+    }
+  };
+
   if (!open) return null;
 
   return (
@@ -76,7 +93,7 @@ export default function SearchModal({ open, onClose }: SearchModalProps) {
           <div className="h-px bg-gradient-to-r from-transparent via-gold/20 to-transparent" />
 
           {/* Search input */}
-          <div className="flex items-center gap-3 px-5 py-4">
+          <div className="flex items-center gap-3 px-5 py-4" onKeyDown={handleKeyDown}>
             <Search className="w-5 h-5 text-gold/40 flex-shrink-0" />
             <input
               ref={inputRef}
