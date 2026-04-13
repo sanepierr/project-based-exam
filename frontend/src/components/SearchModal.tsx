@@ -1,8 +1,10 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { Search, Loader2 } from "lucide-react";
+import Image from "next/image";
+import { Search, Loader2, Star } from "lucide-react";
 import { moviesAPI } from "@/lib/api";
+import { posterUrl } from "@/lib/utils";
 import type { MovieCompact } from "@/types/movie";
 
 interface SearchModalProps {
@@ -99,7 +101,10 @@ export default function SearchModal({ open, onClose }: SearchModalProps) {
               ref={inputRef}
               type="text"
               value={query}
-              onChange={(e) => setQuery(e.target.value)}
+              onChange={(e) => {
+                setQuery(e.target.value);
+                setSelectedIndex(-1);
+              }}
               placeholder="Search movies, directors, actors..."
               className="flex-1 bg-transparent text-white placeholder:text-white/25 outline-none text-lg font-body"
             />
@@ -112,6 +117,90 @@ export default function SearchModal({ open, onClose }: SearchModalProps) {
               ESC
             </button>
           </div>
+
+          {/* Divider */}
+          {(results.length > 0 || (query.length >= 2 && !loading)) && (
+            <div className="h-px bg-white/[0.04]" />
+          )}
+
+          {/* Results list */}
+          {results.length > 0 && (
+            <div className="max-h-[45vh] overflow-y-auto p-2">
+              <p className="text-[10px] uppercase tracking-wider text-white/20 px-3 py-2 font-semibold">
+                Movies
+              </p>
+              {results.map((movie, i) => (
+                <button
+                  key={movie.id || movie.tmdb_id}
+                  className={`w-full flex items-center gap-4 p-3 rounded-xl transition-all text-left ${
+                    i === selectedIndex
+                      ? "bg-gold/10 border border-gold/15"
+                      : "hover:bg-white/[0.04] border border-transparent"
+                  }`}
+                >
+                  {/* Poster */}
+                  <div className="w-11 h-[66px] rounded-lg overflow-hidden bg-surface-3 flex-shrink-0 border border-white/5">
+                    <Image
+                      src={posterUrl(movie.poster_url || (movie as any).poster_path, "w185")}
+                      alt={movie.title}
+                      width={44}
+                      height={66}
+                      className="w-full h-full object-cover"
+                      unoptimized
+                    />
+                  </div>
+
+                  {/* Info */}
+                  <div className="flex-1 min-w-0">
+                    <h4 className="text-sm font-semibold truncate text-white/90">
+                      {movie.title}
+                    </h4>
+                    <div className="flex items-center gap-2 text-[11px] text-white/35 mt-1">
+                      {movie.year && <span>{movie.year}</span>}
+                      {movie.vote_average > 0 && (
+                        <span className="flex items-center gap-1">
+                          <Star className="w-3 h-3 text-gold fill-gold" />
+                          <span className="text-gold/80">{movie.vote_average.toFixed(1)}</span>
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </button>
+              ))}
+            </div>
+          )}
+
+          {/* No results */}
+          {query.length >= 2 && !loading && results.length === 0 && (
+            <div className="p-10 text-center">
+              <Search className="w-8 h-8 mx-auto mb-3 text-white/10" />
+              <p className="text-sm text-white/25">
+                No movies found for &ldquo;{query}&rdquo;
+              </p>
+            </div>
+          )}
+
+          {/* Empty state hints */}
+          {query.length < 2 && (
+            <div className="p-4 pb-5">
+              <p className="text-[10px] uppercase tracking-wider text-white/20 px-3 py-2 font-semibold">
+                Try searching for
+              </p>
+              <div className="flex flex-wrap gap-2 px-3">
+                {["Inception", "Christopher Nolan", "Sci-Fi", "The Godfather", "Studio Ghibli"].map(
+                  (hint) => (
+                    <button
+                      key={hint}
+                      onClick={() => setQuery(hint)}
+                      className="px-3 py-1.5 rounded-lg bg-white/[0.03] border border-white/[0.06] text-[12px] text-white/40 hover:text-white/60 hover:border-gold/15 transition-all"
+                    >
+                      {hint}
+                    </button>
+                  )
+                )}
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>
