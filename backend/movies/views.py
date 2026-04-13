@@ -219,6 +219,31 @@ def search_people(request):
     return Response(data)
 
 
+# Mood keywords for auto-detection from free-text descriptions
+_MOOD_KEYWORDS = {
+    "cozy-night": ["cozy", "comfort", "relaxing", "warm", "gentle", "calm", "peaceful", "chill"],
+    "adrenaline": ["action", "fight", "explosive", "intense", "fast", "chase", "combat", "war"],
+    "date-night": ["romantic", "love", "romance", "date", "charming", "sweet", "heartfelt"],
+    "mind-bender": ["twist", "mind", "puzzle", "complex", "cerebral", "reality", "trippy", "paradox"],
+    "feel-good": ["uplifting", "happy", "funny", "joyful", "wholesome", "heartwarming", "inspiring"],
+    "edge-of-seat": ["suspense", "thriller", "dark", "creepy", "tense", "horror", "scary", "gritty"],
+    "epic-adventure": ["epic", "adventure", "journey", "quest", "hero", "fantasy", "grand", "mythic"],
+    "cry-it-out": ["sad", "emotional", "drama", "tragic", "moving", "tears", "grief", "bittersweet"],
+    "family-fun": ["family", "kids", "animated", "cartoon", "children", "fun", "playful"],
+    "documentary-deep-dive": ["documentary", "true story", "real", "history", "educational", "factual"],
+}
+
+
+def _detect_mood(text: str) -> str | None:
+    """Return the best-matching mood slug based on keyword overlap, or None."""
+    lower = text.lower()
+    best_slug, best_count = None, 0
+    for slug, words in _MOOD_KEYWORDS.items():
+        count = sum(1 for w in words if w in lower)
+        if count > best_count:
+            best_slug, best_count = slug, count
+    return best_slug if best_count >= 1 else None
+
 
 MOOD_MAP = {
     "cozy-night": {
