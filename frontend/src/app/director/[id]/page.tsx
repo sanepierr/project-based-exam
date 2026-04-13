@@ -190,6 +190,16 @@ export default function DirectorPage() {
               </div>
             )}
           </div>
+
+          <a
+            href={`https://www.themoviedb.org/person/${personId}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1.5 text-xs font-medium text-gold/80 hover:text-gold mt-2"
+          >
+            View on TMDB
+            <ExternalLink className="w-3.5 h-3.5" />
+          </a>
         </div>
       </div>
 
