@@ -101,6 +101,28 @@ function GenreContent() {
               ))}
             </select>
           </label>
+          <button
+            type="button"
+            onClick={async () => {
+              const url =
+                typeof window !== "undefined" ? window.location.href : "";
+              try {
+                await navigator.clipboard.writeText(url);
+                setCopied(true);
+                setTimeout(() => setCopied(false), 2000);
+              } catch {
+                /* ignore */
+              }
+            }}
+            className="inline-flex items-center gap-2 h-10 px-4 rounded-xl glass-card text-xs font-medium text-white/70 hover:text-white hover:border-gold/20 transition-all"
+          >
+            {copied ? (
+              <Check className="w-3.5 h-3.5 text-emerald-400" />
+            ) : (
+              <Link2 className="w-3.5 h-3.5" />
+            )}
+            {copied ? "Copied" : "Copy link"}
+          </button>
         </div>
       </div>
 
