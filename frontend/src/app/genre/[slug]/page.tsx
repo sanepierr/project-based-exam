@@ -40,6 +40,22 @@ function GenreContent() {
     .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
     .join(" ");
 
+  const setSort = (value: string) => {
+    const q = new URLSearchParams();
+    if (genreId) q.set("id", genreId);
+    q.set("sort", value);
+    q.set("page", "1");
+    router.replace(`/genre/${slug}?${q.toString()}`, { scroll: false });
+  };
+
+  const setPageSafe = (p: number) => {
+    const q = new URLSearchParams();
+    if (genreId) q.set("id", genreId);
+    q.set("sort", sort);
+    q.set("page", String(p));
+    router.replace(`/genre/${slug}?${q.toString()}`, { scroll: false });
+  };
+
   useEffect(() => {
     async function fetchMovies() {
       setLoading(true);
