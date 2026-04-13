@@ -24,6 +24,19 @@ const MOODS = [
   { slug: "documentary-deep-dive", label: "Documentary", icon: BookOpen, color: "from-cyan-500/15 to-sky-600/15", iconColor: "text-cyan-400", desc: "Real stories" },
 ];
 
+const MOOD_RECOMMENDATIONS: Record<string, string[]> = {
+  "cozy-night": ["feel-good", "date-night"],
+  adrenaline: ["edge-of-seat", "epic-adventure"],
+  "date-night": ["cozy-night", "feel-good"],
+  "mind-bender": ["edge-of-seat", "documentary-deep-dive"],
+  "feel-good": ["cozy-night", "family-fun"],
+  "edge-of-seat": ["adrenaline", "mind-bender"],
+  "epic-adventure": ["adrenaline", "family-fun"],
+  "cry-it-out": ["date-night", "documentary-deep-dive"],
+  "family-fun": ["feel-good", "epic-adventure"],
+  "documentary-deep-dive": ["mind-bender", "cry-it-out"],
+};
+
 function MoodContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -38,6 +51,7 @@ function MoodContent() {
   const [sortBy, setSortBy] = useState("popularity.desc");
   const [favorites, setFavorites] = useState<string[]>([]);
   const [history, setHistory] = useState<string[]>([]);
+  const [recommended, setRecommended] = useState<typeof MOODS>([]);
   const [error, setError] = useState<string>("");
   const [toastMessage, setToastMessage] = useState<string>("");
   const [focusedIndex, setFocusedIndex] = useState<number>(-1);
@@ -47,10 +61,13 @@ function MoodContent() {
   useEffect(() => {
     if (!activeMood) return;
     fetchMoodMovies(activeMood, 1);
-    // Update history
-    const newHistory = [activeMood, ...history.filter(h => h !== activeMood)].slice(0, 5);
-    setHistory(newHistory);
-    localStorage.setItem("moodHistory", JSON.stringify(newHistory));
+    setHistory((currentHistory) => {
+      const newHistory = [activeMood, ...currentHistory.filter(h => h !== activeMood)].slice(0, 5);
+      localStorage.setItem("moodHistory", JSON.stringify(newHistory));
+      return newHistory;
+    });
+    const recommendedSlugs = MOOD_RECOMMENDATIONS[activeMood] || [];
+    setRecommended(MOODS.filter((m) => recommendedSlugs.includes(m.slug)));
   }, [activeMood]);
 
   useEffect(() => {
@@ -193,56 +210,79 @@ function MoodContent() {
       {activeMood && (
         <div>
           {moodInfo && (
-            <div className="flex items-center justify-between mb-8">
-              <div>
-                <h2 className="text-2xl font-bold font-display">{moodInfo.label}</h2>
-                <p className="text-sm text-white/30 mt-0.5">{moodInfo.description}</p>
+            <div className="flex flex-col gap-5 mb-8">
+              <div className="flex items-start justify-between gap-6 flex-wrap">
+                <div>
+                  <h2 className="text-2xl font-bold font-display">{moodInfo.label}</h2>
+                  <p className="text-sm text-white/30 mt-0.5">{moodInfo.description}</p>
+                </div>
+                <div className="flex items-center gap-4">
+                  {totalResults > 0 && (
+                    <div className="text-sm text-white/50">
+                      {totalResults.toLocaleString()} movies
+                    </div>
+                  )}
+                  <button
+                    onClick={() => {
+                      const newFavorites = favorites.includes(activeMood)
+                        ? favorites.filter(f => f !== activeMood)
+                        : [...favorites, activeMood];
+                      setFavorites(newFavorites);
+                      localStorage.setItem("moodFavorites", JSON.stringify(newFavorites));
+                      setToastMessage(favorites.includes(activeMood) ? "Removed from favorites" : "Added to favorites");
+                      setTimeout(() => setToastMessage(""), 2000);
+                    }}
+                    className={`p-2 rounded-lg transition-colors ${favorites.includes(activeMood) ? "bg-yellow-500/20 text-yellow-400" : "bg-white/10 text-white/50 hover:text-white"}`}
+                    aria-label={favorites.includes(activeMood) ? "Remove mood from favorites" : "Add mood to favorites"}
+                  >
+                    <Star className={`w-4 h-4 ${favorites.includes(activeMood) ? "fill-current" : ""}`} />
+                  </button>
+                  <button
+                    onClick={() => {
+                      const url = `${window.location.origin}/mood?mood=${activeMood}`;
+                      navigator.clipboard.writeText(url);
+                      setToastMessage("Link copied to clipboard!");
+                      setTimeout(() => setToastMessage(""), 2000);
+                    }}
+                    className="p-2 rounded-lg bg-white/10 text-white/50 hover:text-white transition-colors"
+                    aria-label="Copy mood link"
+                  >
+                    <Share className="w-4 h-4" />
+                  </button>
+                  <select
+                    value={sortBy}
+                    onChange={(e) => {
+                      setSortBy(e.target.value);
+                      fetchMoodMovies(activeMood, 1, e.target.value);
+                    }}
+                    className="px-3 py-1 rounded-lg bg-white/10 border border-white/20 text-sm text-white"
+                    aria-label="Sort mood results"
+                  >
+                    <option value="popularity.desc">Most Popular</option>
+                    <option value="vote_average.desc">Highest Rated</option>
+                    <option value="release_date.desc">Newest</option>
+                    <option value="release_date.asc">Oldest</option>
+                  </select>
+                </div>
               </div>
-              <div className="flex items-center gap-4">
-                {totalResults > 0 && (
-                  <div className="text-sm text-white/50">
-                    {totalResults.toLocaleString()} movies
+
+              {recommended.length > 0 && (
+                <div className="flex flex-col gap-3">
+                  <p className="text-sm text-white/50">You might also enjoy:</p>
+                  <div className="flex flex-wrap gap-2">
+                    {recommended.map((mood) => (
+                      <button
+                        key={mood.slug}
+                        onClick={() => router.push(`/mood?mood=${mood.slug}`)}
+                        className="rounded-full border border-white/10 bg-white/10 px-4 py-2 text-sm text-white transition-all duration-200 hover:border-gold/40 hover:bg-gold/10"
+                        aria-label={`Try ${mood.label} next`}
+                      >
+                        {mood.label}
+                      </button>
+                    ))}
                   </div>
-                )}
-                <button
-                  onClick={() => {
-                    const newFavorites = favorites.includes(activeMood)
-                      ? favorites.filter(f => f !== activeMood)
-                      : [...favorites, activeMood];
-                    setFavorites(newFavorites);
-                    localStorage.setItem("moodFavorites", JSON.stringify(newFavorites));
-                    setToastMessage(favorites.includes(activeMood) ? "Removed from favorites" : "Added to favorites");
-                    setTimeout(() => setToastMessage(""), 2000);
-                  }}
-                  className={`p-2 rounded-lg transition-colors ${favorites.includes(activeMood) ? "bg-yellow-500/20 text-yellow-400" : "bg-white/10 text-white/50 hover:text-white"}`}
-                >
-                  <Star className={`w-4 h-4 ${favorites.includes(activeMood) ? "fill-current" : ""}`} />
-                </button>
-                <button
-                  onClick={() => {
-                    const url = `${window.location.origin}/mood?mood=${activeMood}`;
-                    navigator.clipboard.writeText(url);
-                    setToastMessage("Link copied to clipboard!");
-                    setTimeout(() => setToastMessage(""), 2000);
-                  }}
-                  className="p-2 rounded-lg bg-white/10 text-white/50 hover:text-white transition-colors"
-                >
-                  <Share className="w-4 h-4" />
-                </button>
-                <select
-                  value={sortBy}
-                  onChange={(e) => {
-                    setSortBy(e.target.value);
-                    fetchMoodMovies(activeMood, 1, e.target.value);
-                  }}
-                  className="px-3 py-1 rounded-lg bg-white/10 border border-white/20 text-sm text-white"
-                >
-                  <option value="popularity.desc">Most Popular</option>
-                  <option value="vote_average.desc">Highest Rated</option>
-                  <option value="release_date.desc">Newest</option>
-                  <option value="release_date.asc">Oldest</option>
-                </select>
-              </div>
+                </div>
+              )}
             </div>
           )}
 
