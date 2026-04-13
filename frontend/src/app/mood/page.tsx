@@ -192,7 +192,7 @@ function MoodContent() {
                   >
                     Previous
                   </button>
-                  <span className="text-sm text-white/30 font-mono px-4">{page} / {Math.min(totalPages, 500)}</span>
+                  <span className="text-sm text-white/30 font-mono px-4">{page} / {Math.min(totalPages, MAX_PAGES)}</span>
                   <button
                     type="button"
                     onClick={() => setMoodPage(page + 1)}
