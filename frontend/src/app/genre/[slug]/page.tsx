@@ -58,18 +58,22 @@ function GenreContent() {
   useEffect(() => {
     async function fetchMovies() {
       setLoading(true);
+      setLoadError(false);
       try {
-        const data = await genresAPI.getMovies(slug, page);
+        const data = await genresAPI.getMovies(slug, page, sort);
         setMovies(data.results || []);
         setTotalPages(data.total_pages || 1);
       } catch (err) {
         console.error(err);
+        setLoadError(true);
+        setMovies([]);
+        setTotalPages(1);
       } finally {
         setLoading(false);
       }
     }
     fetchMovies();
-  }, [slug, page]);
+  }, [slug, page, sort]);
 
   return (
     <div className="pt-24 pb-20 px-6 md:px-12 lg:px-20 max-w-[1400px] mx-auto">
