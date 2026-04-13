@@ -127,6 +127,12 @@ function GenreContent() {
         </div>
       </div>
 
+      {loadError && (
+        <div className="mb-8 rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-100/90">
+          Could not load movies for this genre. Check your connection or try another sort.
+        </div>
+      )}
+
       {loading ? (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6">
           {Array.from({ length: 18 }).map((_, i) => (
