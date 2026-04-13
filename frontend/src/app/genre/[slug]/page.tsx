@@ -149,7 +149,7 @@ function GenreContent() {
           {totalPages > 1 && (
             <div className="flex items-center justify-center gap-3 mt-12">
               <button
-                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                onClick={() => setPageSafe(Math.max(1, page - 1))}
                 disabled={page <= 1}
                 className="px-5 py-2.5 rounded-xl glass-card text-sm font-medium disabled:opacity-20 hover:border-gold/15 transition-all"
               >
@@ -159,7 +159,7 @@ function GenreContent() {
                 {page} / {Math.min(totalPages, 500)}
               </span>
               <button
-                onClick={() => setPage((p) => p + 1)}
+                onClick={() => setPageSafe(page + 1)}
                 disabled={page >= totalPages}
                 className="px-5 py-2.5 rounded-xl glass-card text-sm font-medium disabled:opacity-20 hover:border-gold/15 transition-all"
               >
