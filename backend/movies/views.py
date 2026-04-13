@@ -245,6 +245,402 @@ def _detect_mood(text: str) -> str | None:
     return best_slug if best_count >= 1 else None
 
 
+@api_view(["POST"])
+@permission_classes([AllowAny])
+def describe_movies(request):
+    """
+    POST /api/movies/describe/
+    Body: { "description": "superhero, meta-human, dark city", "page": 1 }
+
+    Resolves free-text descriptions into TMDB keywords, discovers matching
+    movies, and optionally blends mood-based results when a mood is detected.
+    """
+    description = (request.data.get("description") or "").strip()
+    page = int(request.data.get("page", 1))
+
+    if not description:
+        return Response(
+            {"error": "A description is required."},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    import re
+
+    # Maps trigger words/phrases in descriptions to additional TMDB keyword searches.
+    # Bridges the gap between how people describe movies and how TMDB tags them.
+    CONCEPT_SYNONYMS = {
+        # --- Time / loops / alternate reality ---
+        "relive": ["time loop", "repeating day", "déjà vu"],
+        "same day": ["time loop", "repeating day"],
+        "over and over": ["time loop", "repeating day"],
+        "loop": ["time loop"],
+        "repeat": ["time loop", "repeating day"],
+        "stuck in time": ["time loop", "time travel"],
+        "time travel": ["time travel", "time machine"],
+        "go back in time": ["time travel", "time machine"],
+        "parallel universe": ["parallel universe", "multiverse", "alternate reality"],
+        "alternate": ["alternate reality", "parallel universe", "what if"],
+        "multiverse": ["multiverse", "parallel universe"],
+
+        # --- Space / sci-fi ---
+        "cryo": ["suspended animation", "cryogenics"],
+        "cryo-sleep": ["suspended animation", "cryogenics"],
+        "stasis": ["suspended animation"],
+        "space": ["outer space", "spacecraft", "space travel", "space station"],
+        "spaceship": ["spacecraft", "space travel", "spaceship"],
+        "vessel": ["spacecraft", "spaceship"],
+        "alien": ["alien", "extraterrestrial", "alien creature", "first contact"],
+        "aliens": ["alien", "extraterrestrial", "alien invasion"],
+        "deadly presence": ["alien creature", "monster", "creature"],
+        "space horror": ["alien", "space horror", "monster"],
+        "crew": ["spaceship", "spacecraft", "crew"],
+        "woken": ["suspended animation", "awakening"],
+        "entered their ship": ["stowaway", "alien creature"],
+        "cyberpunk": ["cyberpunk", "dystopia", "hacker"],
+        "hacking": ["hacker", "computer", "cybercrime"],
+        "virtual": ["virtual reality", "simulated reality"],
+        "simulation": ["virtual reality", "simulated reality", "computer simulation"],
+        "fake reality": ["virtual reality", "simulated reality"],
+        "manufactured lie": ["conspiracy", "social experiment", "simulated reality"],
+        "not real": ["virtual reality", "simulated reality"],
+        "matrix": ["virtual reality", "simulated reality", "chosen one"],
+        "robot": ["robot", "artificial intelligence", "android"],
+        "artificial intelligence": ["artificial intelligence", "android", "sentient computer"],
+        "ai": ["artificial intelligence", "sentient computer"],
+        "android": ["android", "robot", "artificial intelligence"],
+        "hologram": ["hologram", "artificial intelligence", "virtual reality"],
+
+        # --- Crime / heist / undercover ---
+        "heist": ["heist", "robbery", "bank robbery", "caper"],
+        "robbery": ["robbery", "bank robbery", "heist"],
+        "thieves": ["heist", "robbery", "thief"],
+        "steal": ["heist", "robbery", "thief"],
+        "getaway": ["getaway", "chase", "escape"],
+        "betrayed": ["betrayal", "double cross", "traitor"],
+        "betrayal": ["betrayal", "double cross"],
+        "double cross": ["double cross", "betrayal", "traitor"],
+        "undercover": ["undercover cop", "undercover operation", "mole"],
+        "mob": ["organized crime", "mafia", "crime boss"],
+        "mafia": ["mafia", "organized crime", "gangster"],
+        "gangster": ["gangster", "organized crime", "crime boss"],
+        "criminal organization": ["organized crime", "mafia"],
+        "cartel": ["drug cartel", "organized crime", "drug trade"],
+        "identity": ["identity crisis", "double life", "identity"],
+        "lose his identity": ["identity crisis", "double life", "undercover cop"],
+        "detective": ["detective", "investigation", "murder investigation"],
+        "investigation": ["investigation", "detective", "murder investigation"],
+        "murder": ["murder", "murder investigation", "serial killer"],
+        "serial killer": ["serial killer", "murder", "psychopath"],
+        "killer": ["killer", "serial killer", "murder"],
+        "corruption": ["corruption", "police corruption", "political corruption"],
+        "vigilante": ["vigilante", "masked vigilante", "one-man army"],
+        "noir": ["neo-noir", "film noir"],
+
+        # --- Kidnapping / rescue / missing person ---
+        "kidnap": ["kidnapping", "abduction", "missing person"],
+        "kidnapped": ["kidnapping", "abduction", "ransom"],
+        "abduct": ["abduction", "kidnapping"],
+        "missing daughter": ["kidnapping", "missing person", "father daughter"],
+        "missing child": ["kidnapping", "missing person", "missing child"],
+        "taken": ["kidnapping", "rescue", "one-man army"],
+        "ransom": ["ransom", "kidnapping"],
+        "rescue": ["rescue", "rescue mission", "one-man army"],
+        "daughter": ["father daughter", "kidnapping", "daughter"],
+        "father": ["father son", "father daughter", "fatherhood"],
+        "law into his own hands": ["vigilante", "revenge", "one-man army"],
+        "police fail": ["police corruption", "vigilante justice", "incompetent police"],
+
+        # --- Home / invasion / survival ---
+        "home invasion": ["home invasion", "break-in", "intruder"],
+        "invaded": ["home invasion", "intruder"],
+        "break in": ["home invasion", "break-in"],
+        "strangers": ["strangers", "home invasion", "distrust"],
+        "helpless": ["survival", "helplessness", "trapped"],
+        "wealthy family": ["upper class", "wealthy family", "rich family"],
+        "purge": ["purge", "lawlessness", "anarchy"],
+        "trapped": ["trapped", "claustrophobia", "escape"],
+
+        # --- Survival / wilderness / nature ---
+        "survival": ["survival", "wilderness survival", "stranded"],
+        "survive": ["survival", "wilderness survival", "stranded"],
+        "crash": ["plane crash", "crash landing", "survival"],
+        "plane crash": ["plane crash", "air disaster", "survival"],
+        "wilderness": ["wilderness", "wilderness survival", "nature"],
+        "freezing": ["cold weather", "winter", "snow", "hypothermia"],
+        "predator": ["predator", "animal attack", "creature"],
+        "predators": ["predator", "animal attack", "hunted"],
+        "wolves": ["wolf", "animal attack", "wilderness survival"],
+        "bear": ["bear", "animal attack", "wilderness"],
+        "stranded": ["stranded", "survival", "deserted"],
+        "elements": ["survival", "nature", "extreme weather"],
+        "mountain": ["mountain", "climbing", "survival"],
+
+        # --- Emotion / relationships ---
+        "lonely": ["loneliness", "isolation", "solitude"],
+        "relationship": ["love", "forbidden love", "romance"],
+        "dangerous relationship": ["forbidden love", "obsession"],
+        "love": ["love", "romance", "love story"],
+        "romantic": ["romance", "love story", "romantic"],
+        "emotional": ["emotions", "drama", "tearjerker"],
+        "sad": ["tragedy", "tearjerker", "loss"],
+        "revenge": ["revenge", "vengeance", "vendetta"],
+        "vengeance": ["vengeance", "revenge"],
+
+        # --- Weather / environment / isolation ---
+        "snowy": ["snow", "winter", "blizzard", "arctic"],
+        "snow": ["snow", "winter", "blizzard"],
+        "arctic": ["arctic", "antarctica", "polar", "ice"],
+        "antarctic": ["antarctica", "arctic", "polar"],
+        "blizzard": ["blizzard", "snow", "winter", "storm"],
+        "cold": ["cold weather", "winter", "snow", "hypothermia"],
+        "research station": ["research station", "research facility", "remote location"],
+        "scientists": ["scientist", "research", "experiment"],
+        "isolated": ["isolation", "remote location", "stranded"],
+        "remote": ["remote location", "isolation"],
+        "paranoid": ["paranoia", "distrust", "suspicion"],
+        "turn on each other": ["paranoia", "distrust", "betrayal"],
+        "not alone": ["alien", "creature", "stalker", "haunting"],
+
+        # --- Superheroes / comic ---
+        "superhero": ["superhero", "superpower", "comic book"],
+        "superpower": ["superpower", "superhero", "mutant"],
+        "comic book": ["based on comic", "comic book", "superhero"],
+        "batman": ["batman", "dc comics", "gotham city"],
+        "gotham": ["gotham city", "dc comics", "batman"],
+        "joker": ["joker", "dc comics", "villain"],
+        "riddle": ["riddle", "puzzle", "mystery"],
+
+        # --- Horror / supernatural ---
+        "haunted": ["haunted house", "ghost", "paranormal"],
+        "ghost": ["ghost", "haunting", "paranormal"],
+        "paranormal": ["paranormal", "ghost", "supernatural"],
+        "zombie": ["zombie", "undead", "zombie apocalypse"],
+        "vampire": ["vampire", "blood", "undead"],
+        "monster": ["monster", "creature", "beast"],
+        "demon": ["demon", "possession", "exorcism"],
+        "possession": ["possession", "exorcism", "demon"],
+        "scary": ["horror", "fear", "terror"],
+        "creepy": ["creepy", "eerie", "unsettling"],
+        "curse": ["curse", "cursed", "supernatural"],
+
+        # --- War / military / action ---
+        "war": ["war", "warfare", "battle"],
+        "soldier": ["soldier", "military", "army"],
+        "military": ["military", "army", "soldier"],
+        "battle": ["battle", "warfare", "epic battle"],
+        "explosion": ["explosion", "action", "destruction"],
+        "chase": ["car chase", "chase", "pursuit"],
+        "martial arts": ["martial arts", "kung fu", "fight"],
+        "kung fu": ["kung fu", "martial arts"],
+        "fight": ["fight", "combat", "martial arts"],
+        "assassin": ["assassin", "hitman", "contract killer"],
+
+        # --- Dreams / psychology / mind ---
+        "dream": ["dream", "subconscious", "dream world"],
+        "dreams": ["dream", "subconscious", "dream world", "lucid dream"],
+        "subconscious": ["subconscious", "dream", "psychoanalysis"],
+        "inception": ["dream", "subconscious", "dream world"],
+        "mind": ["mind control", "telepathy", "psychology"],
+        "psychology": ["psychology", "psychopath", "mental illness"],
+        "hallucination": ["hallucination", "delusion", "madness"],
+        "insanity": ["madness", "mental illness", "psychopath"],
+        "twist": ["plot twist", "surprise ending", "deception"],
+
+        # --- Family / coming of age ---
+        "coming of age": ["coming of age", "teenager", "growing up"],
+        "teenager": ["teenager", "high school", "coming of age"],
+        "school": ["high school", "school", "student"],
+        "childhood": ["childhood", "child", "nostalgia"],
+        "family": ["family", "family relationships", "family drama"],
+        "friendship": ["friendship", "best friend", "buddy"],
+        "animated": ["animation", "animated", "cartoon"],
+
+        # --- Documentary / true story ---
+        "documentary": ["documentary", "true story", "based on true events"],
+        "true story": ["based on true events", "true story", "biographical"],
+        "real": ["based on true events", "true story"],
+        "biography": ["biography", "biographical", "biopic"],
+    }
+
+    STOP_WORDS = {
+        "a", "an", "the", "is", "it", "in", "on", "of", "to", "and", "or",
+        "for", "with", "my", "me", "i", "we", "you", "he", "she", "his",
+        "her", "they", "them", "their", "be", "been", "being", "has", "have",
+        "had", "do", "does", "did", "will", "would", "could", "should",
+        "may", "might", "shall", "can", "at", "by", "from", "up", "out",
+        "if", "so", "as", "are", "was", "were", "am", "just", "than",
+        "then", "into", "over", "after", "before", "between", "under",
+        "again", "further", "once", "here", "there", "when", "where",
+        "why", "how", "all", "each", "every", "both", "few", "more",
+        "most", "other", "only", "own", "same", "too", "very", "really",
+        "movie", "movies", "film", "films", "show", "shows", "like",
+        "style", "type", "kind", "something", "about", "some", "that",
+        "this", "but", "not", "no", "also", "who", "what", "which",
+        "gets", "get", "goes", "finds", "find", "start", "starts",
+        "begin", "begins", "look", "looks", "during", "while",
+    }
+
+    # --- Step 1: Extract candidate phrases from the description ---
+    # Normalise text: lowercase, keep hyphens, remove other punctuation
+    clean = re.sub(r"[^\w\s-]", " ", description.lower())
+    all_words = [w for w in clean.split() if w not in STOP_WORDS and len(w) > 2]
+
+    # Build candidate phrases: trigrams first, then bigrams, then singles
+    candidates = []
+    seen_candidates = set()
+
+    # If the user used commas, treat each segment as a candidate too
+    comma_terms = [t.strip() for t in description.replace("\n", ",").split(",") if t.strip()]
+    if len(comma_terms) > 1:
+        for ct in comma_terms:
+            lc = ct.lower().strip()
+            if lc not in seen_candidates:
+                candidates.append(lc)
+                seen_candidates.add(lc)
+
+    # Trigrams from cleaned words
+    for i in range(len(all_words) - 2):
+        tri = f"{all_words[i]} {all_words[i+1]} {all_words[i+2]}"
+        if tri not in seen_candidates:
+            candidates.append(tri)
+            seen_candidates.add(tri)
+
+    # Bigrams from cleaned words
+    for i in range(len(all_words) - 1):
+        bi = f"{all_words[i]} {all_words[i+1]}"
+        if bi not in seen_candidates:
+            candidates.append(bi)
+            seen_candidates.add(bi)
+
+    # Individual words (longer/rarer words first)
+    for w in sorted(all_words, key=len, reverse=True):
+        if w not in seen_candidates:
+            candidates.append(w)
+            seen_candidates.add(w)
+
+    # Expand with concept synonyms — check trigger phrases against the description
+    desc_lower = description.lower()
+    synonym_additions = []
+    for trigger, expansions in CONCEPT_SYNONYMS.items():
+        if trigger in desc_lower:
+            for exp in expansions:
+                if exp not in seen_candidates:
+                    synonym_additions.append(exp)
+                    seen_candidates.add(exp)
+    # Insert synonyms near the front (after comma terms but before raw n-grams)
+    insert_pos = len(comma_terms) if len(comma_terms) > 1 else 0
+    for i, syn in enumerate(synonym_additions):
+        candidates.insert(insert_pos + i, syn)
+
+    # --- Step 2: Resolve candidates to TMDB keyword IDs ---
+    all_keyword_ids = []
+    seen_keyword_ids = set()
+    resolved_chips = []
+    matched_keyword_names = []
+    MAX_KEYWORD_SEARCHES = 22
+    MAX_KEYWORDS = 14
+
+    for candidate in candidates[:MAX_KEYWORD_SEARCHES]:
+        if len(all_keyword_ids) >= MAX_KEYWORDS:
+            break
+        kw_results = tmdb.search_keywords(candidate)
+        if kw_results:
+            best = kw_results[0]
+            if best["id"] not in seen_keyword_ids:
+                all_keyword_ids.append(str(best["id"]))
+                seen_keyword_ids.add(best["id"])
+                matched_keyword_names.append(best["name"])
+
+    if matched_keyword_names:
+        resolved_chips.append({
+            "term": description[:80] + ("..." if len(description) > 80 else ""),
+            "keyword_id": -1,
+            "keyword_name": ", ".join(matched_keyword_names[:8]),
+        })
+
+    # Also show comma-separated terms as individual chips if user used commas
+    if len(comma_terms) > 1:
+        resolved_chips = []
+        for ct in comma_terms:
+            ct_lower = ct.lower().strip()
+            ct_kw = tmdb.search_keywords(ct_lower)
+            if ct_kw and ct_kw[0]["id"] in seen_keyword_ids:
+                resolved_chips.append({"term": ct, "keyword_id": ct_kw[0]["id"], "keyword_name": ct_kw[0]["name"]})
+            else:
+                ct_words = [w for w in ct_lower.split() if w not in STOP_WORDS and len(w) > 2]
+                sub = [n for n in matched_keyword_names if any(w in n for w in ct_words)]
+                if sub:
+                    resolved_chips.append({"term": ct, "keyword_id": -1, "keyword_name": ", ".join(sub[:3])})
+                else:
+                    resolved_chips.append({"term": ct, "keyword_id": None, "keyword_name": None})
+
+    # --- Step 3: Discover movies by keywords (pipe = OR) ---
+    keyword_results = []
+    total_pages = 1
+    if all_keyword_ids:
+        data = tmdb.discover_movies(
+            with_keywords="|".join(all_keyword_ids),
+            sort_by="popularity.desc",
+            page=page,
+            **{"vote_count.gte": 10},
+        )
+        keyword_results = data.get("results", [])
+        total_pages = data.get("total_pages", 1)
+
+    # --- Secondary: Mood auto-detection ---
+    detected_mood = _detect_mood(description)
+    mood_info = None
+    mood_results = []
+    if detected_mood and detected_mood in MOOD_MAP:
+        mood = MOOD_MAP[detected_mood]
+        mood_info = {"slug": detected_mood, "label": mood["label"]}
+        params = {
+            "with_genres": mood["genres"],
+            "sort_by": mood.get("sort_by", "popularity.desc"),
+            "page": 1,
+        }
+        if "vote_count_gte" in mood:
+            params["vote_count.gte"] = mood["vote_count_gte"]
+        if "vote_average_gte" in mood:
+            params["vote_average.gte"] = mood["vote_average_gte"]
+        mood_data = tmdb.discover_movies(**params)
+        mood_results = mood_data.get("results", [])[:6]
+
+    # --- Merge keyword + mood results ---
+    merged = []
+    seen_ids = set()
+    for source in (keyword_results, mood_results):
+        for m in source:
+            mid = m["id"]
+            if mid not in seen_ids:
+                seen_ids.add(mid)
+                merged.append(m)
+
+    # --- Fallback: title search ONLY when keywords + mood found nothing ---
+    used_fallback = False
+    if not merged:
+        used_fallback = True
+        for term in comma_terms:
+            search_data = tmdb.search_movies(term, page=page)
+            for m in search_data.get("results", []):
+                if m["id"] not in seen_ids:
+                    seen_ids.add(m["id"])
+                    merged.append(m)
+            total_pages = max(total_pages, search_data.get("total_pages", 1))
+
+    serializer = TMDBMovieSerializer(merged, many=True)
+
+    return Response({
+        "results": serializer.data,
+        "total_pages": max(total_pages, 1),
+        "page": page,
+        "chips": resolved_chips,
+        "detected_mood": mood_info,
+        "description": description,
+        "fallback": used_fallback,
+    })
+
+
 MOOD_MAP = {
     "cozy-night": {
         "label": "Cozy Night In",
