@@ -282,7 +282,9 @@ function SearchContent() {
           <SlidersHorizontal className="w-4 h-4" />
           Advanced Filters
           {hasActiveFilters && (
-            <span className="w-2 h-2 rounded-full bg-gold animate-pulse" />
+            <span className="flex items-center justify-center w-5 h-5 rounded-full bg-gold text-surface-0 text-[10px] font-bold leading-none">
+              {[filterGenre, filterYearFrom, filterYearTo, filterRating, filterRuntimeMin, filterRuntimeMax, filterLanguage].filter(Boolean).length}
+            </span>
           )}
           <ChevronDown className={`w-3.5 h-3.5 transition-transform ${filtersOpen ? "rotate-180" : ""}`} />
         </button>
