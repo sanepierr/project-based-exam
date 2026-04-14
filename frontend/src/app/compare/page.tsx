@@ -22,6 +22,8 @@ function CompareContent() {
   const [searchingA, setSearchingA] = useState(false);
   const [searchingB, setSearchingB] = useState(false);
   const urlBootstrapDone = useRef(false);
+  const [urlLoadError, setUrlLoadError] = useState(false);
+  const [badParams, setBadParams] = useState(false);
 
   async function searchMovies(query: string, side: "A" | "B") {
     if (query.length < 2) {
