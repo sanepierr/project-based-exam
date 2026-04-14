@@ -16,6 +16,27 @@ const SEARCH_HINTS = [
   "Studio Ghibli",
 ];
 
+const RECENT_KEY = "cq_recent_searches";
+const MAX_RECENT = 5;
+
+function getRecent(): string[] {
+  if (typeof window === "undefined") return [];
+  try {
+    return JSON.parse(localStorage.getItem(RECENT_KEY) || "[]");
+  } catch {
+    return [];
+  }
+}
+
+function saveRecent(term: string) {
+  const next = [term, ...getRecent().filter((q) => q !== term)].slice(0, MAX_RECENT);
+  localStorage.setItem(RECENT_KEY, JSON.stringify(next));
+}
+
+function clearRecent() {
+  localStorage.removeItem(RECENT_KEY);
+}
+
 interface SearchModalProps {
   open: boolean;
   onClose: () => void;
@@ -26,12 +47,14 @@ export default function SearchModal({ open, onClose }: SearchModalProps) {
   const [results, setResults] = useState<MovieCompact[]>([]);
   const [loading, setLoading] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(-1);
+  const [recentSearches, setRecentSearches] = useState<string[]>([]);
   const inputRef = useRef<HTMLInputElement>(null);
   const requestIdRef = useRef(0);
   const router = useRouter();
 
   useEffect(() => {
     if (open) {
+      setRecentSearches(getRecent());
       setTimeout(() => inputRef.current?.focus(), 100);
     } else {
       setQuery("");
@@ -102,7 +125,8 @@ export default function SearchModal({ open, onClose }: SearchModalProps) {
   };
 
   const handleSelect = useCallback(
-    (tmdbId: number) => {
+    (tmdbId: number, title?: string) => {
+      if (title) saveRecent(title);
       router.push(`/movie/${tmdbId}`);
       onClose();
     },
@@ -112,6 +136,7 @@ export default function SearchModal({ open, onClose }: SearchModalProps) {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (query.trim()) {
+      saveRecent(query.trim());
       router.push(`/search?q=${encodeURIComponent(query.trim())}`);
       onClose();
     }
@@ -177,7 +202,7 @@ export default function SearchModal({ open, onClose }: SearchModalProps) {
               {results.map((movie, i) => (
                 <button
                   key={movie.id || movie.tmdb_id}
-                  onClick={() => handleSelect(movie.tmdb_id || movie.id)}
+                  onClick={() => handleSelect(movie.tmdb_id || movie.id, movie.title)}
                   role="option"
                   aria-selected={i === selectedIndex}
                   className={`w-full flex items-center gap-4 p-3 rounded-xl transition-all text-left focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-gold/40 ${
