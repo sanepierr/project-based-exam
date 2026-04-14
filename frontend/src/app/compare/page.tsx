@@ -55,6 +55,26 @@ function CompareContent() {
       setLoading(true);
       setUrlLoadError(false);
       setBadParams(false);
+      try {
+        const [dataA, dataB] = await Promise.all([
+          moviesAPI.getDetail(idA),
+          moviesAPI.getDetail(idB),
+        ]);
+        if (cancelled) return;
+        setMovieA(dataA);
+        setMovieB(dataB);
+        replaceCompareUrl(dataA, dataB);
+      } catch (e) {
+        console.error(e);
+        if (!cancelled) setUrlLoadError(true);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [searchParams, replaceCompareUrl]);
   async function searchMovies(query: string, side: "A" | "B") {
     if (query.length < 2) {
       side === "A" ? setResultsA([]) : setResultsB([]);
