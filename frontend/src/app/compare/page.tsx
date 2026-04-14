@@ -44,6 +44,17 @@ function CompareContent() {
     if (urlBootstrapDone.current || !a || !b) return;
     const idA = Number(a);
     const idB = Number(b);
+    if (!Number.isFinite(idA) || !Number.isFinite(idB) || idA < 1 || idB < 1) {
+      setBadParams(true);
+      urlBootstrapDone.current = true;
+      return;
+    }
+    urlBootstrapDone.current = true;
+    let cancelled = false;
+    (async () => {
+      setLoading(true);
+      setUrlLoadError(false);
+      setBadParams(false);
   async function searchMovies(query: string, side: "A" | "B") {
     if (query.length < 2) {
       side === "A" ? setResultsA([]) : setResultsB([]);
