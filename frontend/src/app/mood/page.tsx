@@ -98,7 +98,7 @@ function MoodContent() {
       </div>
 
       {/* Mood grid — each card sets the active mood and resets to page 1 */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3 mb-14">
+      <div aria-label="Mood selection grid" className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3 mb-14">
         {MOODS.map((mood) => {
           const Icon = mood.icon;
           const isActive = activeMood === mood.slug;
