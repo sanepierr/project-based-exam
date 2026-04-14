@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
-import { Search, Loader2, Star } from "lucide-react";
+import { Search, Loader2, Star, Clock, X } from "lucide-react";
 import { moviesAPI } from "@/lib/api";
 import { posterUrl } from "@/lib/utils";
 import type { MovieCompact } from "@/types/movie";
@@ -264,20 +264,53 @@ export default function SearchModal({ open, onClose }: SearchModalProps) {
 
           {/* Empty state */}
           {query.length < 2 && (
-            <div className="p-4 pb-5">
-              <p className="text-[10px] uppercase tracking-wider text-white/20 px-3 py-2 font-semibold">
-                Try searching for
-              </p>
-              <div className="flex flex-wrap gap-2 px-3">
-                {SEARCH_HINTS.map((hint) => (
-                  <button
-                    key={hint}
-                    onClick={() => setQuery(hint)}
-                    className="px-3 py-1.5 rounded-lg bg-white/[0.03] border border-white/[0.06] text-[12px] text-white/40 hover:text-white/60 hover:border-gold/15 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-gold/40 transition-all"
-                  >
-                    {hint}
-                  </button>
-                ))}
+            <div className="p-4 pb-5 space-y-4">
+              {/* Recent searches */}
+              {recentSearches.length > 0 && (
+                <div>
+                  <div className="flex items-center justify-between px-3 py-2">
+                    <p className="text-[10px] uppercase tracking-wider text-white/20 font-semibold">
+                      Recent
+                    </p>
+                    <button
+                      onClick={() => { clearRecent(); setRecentSearches([]); }}
+                      className="flex items-center gap-1 text-[10px] text-white/20 hover:text-white/40 transition-colors"
+                    >
+                      <X className="w-3 h-3" />
+                      Clear
+                    </button>
+                  </div>
+                  <div className="flex flex-wrap gap-2 px-3">
+                    {recentSearches.map((term) => (
+                      <button
+                        key={term}
+                        onClick={() => setQuery(term)}
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/[0.03] border border-white/[0.06] text-[12px] text-white/40 hover:text-white/60 hover:border-gold/15 transition-all"
+                      >
+                        <Clock className="w-3 h-3 text-white/20" />
+                        {term}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Hint chips */}
+              <div>
+                <p className="text-[10px] uppercase tracking-wider text-white/20 px-3 py-2 font-semibold">
+                  Try searching for
+                </p>
+                <div className="flex flex-wrap gap-2 px-3">
+                  {SEARCH_HINTS.map((hint) => (
+                    <button
+                      key={hint}
+                      onClick={() => setQuery(hint)}
+                      className="px-3 py-1.5 rounded-lg bg-white/[0.03] border border-white/[0.06] text-[12px] text-white/40 hover:text-white/60 hover:border-gold/15 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-gold/40 transition-all"
+                    >
+                      {hint}
+                    </button>
+                  ))}
+                </div>
               </div>
             </div>
           )}
