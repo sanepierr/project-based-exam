@@ -1,4 +1,7 @@
 "use client";
+// MoodPage — lets users pick a mood and browse curated movies.
+// URL params: ?mood=<slug>&page=<n> — fully shareable and bookmarkable.
+
 
 import { useState, useEffect, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
