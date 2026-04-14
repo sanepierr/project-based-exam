@@ -10,6 +10,8 @@ import { posterUrl, formatRuntime, formatCurrency, ratingColor } from "@/lib/uti
 import type { MovieCompact } from "@/types/movie";
 
 function CompareContent() {
+  const searchParams = useSearchParams();
+  const router = useRouter();
   const [searchA, setSearchA] = useState("");
   const [searchB, setSearchB] = useState("");
   const [resultsA, setResultsA] = useState<MovieCompact[]>([]);
@@ -19,6 +21,7 @@ function CompareContent() {
   const [loading, setLoading] = useState(false);
   const [searchingA, setSearchingA] = useState(false);
   const [searchingB, setSearchingB] = useState(false);
+  const urlBootstrapDone = useRef(false);
 
   async function searchMovies(query: string, side: "A" | "B") {
     if (query.length < 2) {
