@@ -234,6 +234,18 @@ export default function SearchModal({ open, onClose }: SearchModalProps) {
                         </span>
                       )}
                     </div>
+                    {movie.genres && movie.genres.length > 0 && (
+                      <div className="flex gap-1 mt-1.5 flex-wrap">
+                        {movie.genres.slice(0, 2).map((g) => (
+                          <span
+                            key={g.id}
+                            className="px-1.5 py-0.5 rounded-md bg-white/[0.04] border border-white/[0.06] text-[10px] text-white/30"
+                          >
+                            {g.name}
+                          </span>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 </button>
               ))}
