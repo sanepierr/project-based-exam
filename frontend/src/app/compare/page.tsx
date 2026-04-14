@@ -1,8 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import Image from "next/image";
-import Link from "next/link";
+import { useState, useEffect, useRef, Suspense, useCallback } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
 import {
   Search, Star, Clock, Calendar, DollarSign, ArrowLeftRight,
   Loader2, X, Users, TrendingUp,
