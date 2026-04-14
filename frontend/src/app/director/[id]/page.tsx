@@ -211,6 +211,8 @@ export default function DirectorPage() {
                 <button
                   key={tab.id}
                   type="button"
+                  role="tab"
+                  aria-selected={filmFilter === tab.id}
                   onClick={() => setFilmFilter(tab.id)}
                   className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
                     filmFilter === tab.id
