@@ -219,6 +219,9 @@ export default function SearchModal({ open, onClose }: SearchModalProps) {
                       height={66}
                       className="w-full h-full object-cover"
                       unoptimized
+                      onError={(e) => {
+                        (e.currentTarget as HTMLImageElement).src = "/placeholder-poster.svg";
+                      }}
                     />
                   </div>
                   <div className="flex-1 min-w-0">
