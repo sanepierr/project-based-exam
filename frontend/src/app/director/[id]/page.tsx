@@ -202,7 +202,7 @@ export default function DirectorPage() {
           </a>
 
           {(directedMovies.length > 0 || actedMovies.length > 0) && (
-            <div className="flex flex-wrap gap-2 pt-4">
+            <div className="flex flex-wrap gap-2 pt-4" role="tablist" aria-label="Filmography filter">
               {[
                 { id: "all" as const, label: "All credits" },
                 ...(directedMovies.length > 0 ? [{ id: "directed" as const, label: "Directed only" }] : []),
