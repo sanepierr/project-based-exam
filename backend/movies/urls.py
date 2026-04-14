@@ -13,6 +13,7 @@ urlpatterns = [
     path("now-playing/", views.now_playing, name="now-playing"),
     path("top-rated/", views.top_rated, name="top-rated"),
     path("tmdb/<int:tmdb_id>/", views.movie_detail_tmdb, name="movie-detail-tmdb"),
+    path("describe/", views.describe_movies, name="describe-movies"),
     path("people/search/", views.search_people, name="search-people"),
     path("moods/", views.mood_list, name="mood-list"),
     path("moods/<str:mood_slug>/", views.mood_movies, name="mood-movies"),
