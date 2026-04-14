@@ -1,0 +1,233 @@
+diff --git a/frontend/src/app/compare/page.tsx b/frontend/src/app/compare/page.tsx
+index 43981d7..607634e 100644
+--- a/frontend/src/app/compare/page.tsx
++++ b/frontend/src/app/compare/page.tsx
+@@ -1,17 +1,18 @@
+ "use client";
+ 
+-import { useState } from "react";
++import { useState, useEffect, useRef, Suspense, useCallback } from "react";
+ import Image from "next/image";
+-import Link from "next/link";
++import { useSearchParams, useRouter } from "next/navigation";
+ import {
+-  Search, Star, Clock, Calendar, DollarSign, ArrowLeftRight,
+-  Loader2, X, Users, TrendingUp,
++  Search, ArrowLeftRight, Loader2, X, Link2, Check, ArrowDownUp,
+ } from "lucide-react";
+ import { moviesAPI } from "@/lib/api";
+-import { posterUrl, formatRuntime, formatCurrency, ratingColor } from "@/lib/utils";
++import { posterUrl, formatRuntime, formatCurrency } from "@/lib/utils";
+ import type { MovieCompact } from "@/types/movie";
+ 
+-export default function ComparePage() {
++function CompareContent() {
++  const searchParams = useSearchParams();
++  const router = useRouter();
+   const [searchA, setSearchA] = useState("");
+   const [searchB, setSearchB] = useState("");
+   const [resultsA, setResultsA] = useState<MovieCompact[]>([]);
+@@ -21,6 +22,68 @@ export default function ComparePage() {
+   const [loading, setLoading] = useState(false);
+   const [searchingA, setSearchingA] = useState(false);
+   const [searchingB, setSearchingB] = useState(false);
++  const urlBootstrapDone = useRef(false);
++  const [copied, setCopied] = useState(false);
++  const [urlLoadError, setUrlLoadError] = useState(false);
++  const [badParams, setBadParams] = useState(false);
++
++  const replaceCompareUrl = useCallback(
++    (a: any | null, b: any | null) => {
++      const idA = a ? (a.tmdb_id ?? a.id) : null;
++      const idB = b ? (b.tmdb_id ?? b.id) : null;
++      if (idA && idB) router.replace(`/compare?a=${idA}&b=${idB}`, { scroll: false });
++      else if (idA) router.replace(`/compare?a=${idA}`, { scroll: false });
++      else if (idB) router.replace(`/compare?b=${idB}`, { scroll: false });
++      else router.replace("/compare", { scroll: false });
++    },
++    [router]
++  );
++
++  useEffect(() => {
++    const a = searchParams.get("a");
++    const b = searchParams.get("b");
++    if (urlBootstrapDone.current || !a || !b) return;
++    const idA = Number(a);
++    const idB = Number(b);
++    if (!Number.isFinite(idA) || !Number.isFinite(idB) || idA < 1 || idB < 1) {
++      setBadParams(true);
++      urlBootstrapDone.current = true;
++      return;
++    }
++    urlBootstrapDone.current = true;
++    let cancelled = false;
++    (async () => {
++      setLoading(true);
++      setUrlLoadError(false);
++      setBadParams(false);
++      try {
++        const [dataA, dataB] = await Promise.all([
++          moviesAPI.getDetail(idA),
++          moviesAPI.getDetail(idB),
++        ]);
++        if (cancelled) return;
++        setMovieA(dataA);
++        setMovieB(dataB);
++        replaceCompareUrl(dataA, dataB);
++      } catch (e) {
++        console.error(e);
++        if (!cancelled) setUrlLoadError(true);
++      } finally {
++        if (!cancelled) setLoading(false);
++      }
++    })();
++    return () => {
++      cancelled = true;
++    };
++  }, [searchParams, replaceCompareUrl]);
++
++  useEffect(() => {
++    if (!movieA || !movieB) return;
++    const idA = movieA.tmdb_id ?? movieA.id;
++    const idB = movieB.tmdb_id ?? movieB.id;
++    if (!idA || !idB) return;
++    router.replace(`/compare?a=${idA}&b=${idB}`, { scroll: false });
++  }, [movieA, movieB, router]);
+ 
+   async function searchMovies(query: string, side: "A" | "B") {
+     if (query.length < 2) {
+@@ -45,10 +108,12 @@ export default function ComparePage() {
+         setMovieA(data);
+         setResultsA([]);
+         setSearchA("");
++        replaceCompareUrl(data, movieB);
+       } else {
+         setMovieB(data);
+         setResultsB([]);
+         setSearchB("");
++        replaceCompareUrl(movieA, data);
+       }
+     } catch (err) {
+       console.error(err);
+@@ -195,8 +260,24 @@ export default function ComparePage() {
+         <p className="text-white/35 max-w-md mx-auto">
+           Pick two movies and compare them head to head, ratings, budget, cast, and more.
+         </p>
++        <p className="text-[11px] text-white/20 mt-3 font-mono max-w-lg mx-auto">
++          Deep link: /compare?a=&lt;TMDB_ID&gt;&b=&lt;TMDB_ID&gt;
++        </p>
+       </div>
+ 
++      {badParams && (
++        <div className="mb-8 max-w-xl mx-auto rounded-xl border border-amber-500/25 bg-amber-500/10 px-4 py-3 text-sm text-amber-100/90 text-center">
++          Invalid movie IDs in the URL. Use positive TMDB numeric IDs for both <code className="text-white/80">a</code> and{" "}
++          <code className="text-white/80">b</code>.
++        </div>
++      )}
++
++      {urlLoadError && (
++        <div className="mb-8 max-w-xl mx-auto rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-100/90 text-center">
++          Could not load one or both films from the link. Check the IDs or pick movies below.
++        </div>
++      )}
++
+       {/* Movie Selectors */}
+       <div className="flex items-start gap-6 mb-12">
+         <MovieSelector
+@@ -206,13 +287,31 @@ export default function ComparePage() {
+           results={resultsA}
+           searching={searchingA}
+           movie={movieA}
+-          clear={() => setMovieA(null)}
++          clear={() => {
++            setMovieA(null);
++            replaceCompareUrl(null, movieB);
++          }}
+         />
+ 
+-        <div className="flex-shrink-0 pt-8">
++        <div className="flex-shrink-0 pt-8 flex flex-col items-center gap-2">
+           <div className="w-12 h-12 rounded-full glass-card flex items-center justify-center">
+             <ArrowLeftRight className="w-5 h-5 text-gold/50" />
+           </div>
++          {movieA && movieB && (
++            <button
++              type="button"
++              onClick={() => {
++                const t = movieA;
++                setMovieA(movieB);
++                setMovieB(t);
++                replaceCompareUrl(movieB, t);
++              }}
++              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-white/[0.08] text-[11px] font-medium text-white/50 hover:text-gold hover:border-gold/25 transition-colors"
++            >
++              <ArrowDownUp className="w-3.5 h-3.5" />
++              Swap
++            </button>
++          )}
+         </div>
+ 
+         <MovieSelector
+@@ -222,7 +321,10 @@ export default function ComparePage() {
+           results={resultsB}
+           searching={searchingB}
+           movie={movieB}
+-          clear={() => setMovieB(null)}
++          clear={() => {
++            setMovieB(null);
++            replaceCompareUrl(movieA, null);
++          }}
+         />
+       </div>
+ 
+@@ -231,7 +333,31 @@ export default function ComparePage() {
+         <div className="glass-card rounded-2xl p-6 md:p-8 animate-slide-up">
+           <div className="h-px bg-gradient-to-r from-transparent via-gold/15 to-transparent mb-6" />
+ 
+-          <h2 className="text-xl font-bold font-display text-center mb-6">Head to Head</h2>
++          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
++            <h2 className="text-xl font-bold font-display text-center sm:text-left flex-1">
++              Head to Head
++            </h2>
++            <button
++              type="button"
++              onClick={async () => {
++                try {
++                  await navigator.clipboard.writeText(window.location.href);
++                  setCopied(true);
++                  setTimeout(() => setCopied(false), 2000);
++                } catch {
++                  /* ignore */
++                }
++              }}
++              className="inline-flex items-center justify-center gap-2 h-9 px-3 rounded-xl glass-card text-xs text-white/70 hover:text-white mx-auto sm:mx-0"
++            >
++              {copied ? (
++                <Check className="w-3.5 h-3.5 text-emerald-400" />
++              ) : (
++                <Link2 className="w-3.5 h-3.5" />
++              )}
++              {copied ? "Copied" : "Copy comparison link"}
++            </button>
++          </div>
+ 
+           <CompareBar label="Rating" valueA={movieA.vote_average} valueB={movieB.vote_average} higher="higher" />
+           <CompareBar label="Vote Count" valueA={movieA.vote_count} valueB={movieB.vote_count} higher="higher" />
+@@ -320,3 +446,17 @@ export default function ComparePage() {
+     </div>
+   );
+ }
++
++export default function ComparePage() {
++  return (
++    <Suspense
++      fallback={
++        <div className="pt-32 flex justify-center">
++          <Loader2 className="w-6 h-6 animate-spin text-gold/40" />
++        </div>
++      }
++    >
++      <CompareContent />
++    </Suspense>
++  );
++}

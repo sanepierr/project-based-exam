@@ -1,0 +1,12 @@
+Person P8 — Compare (“Deep link & swap” slice)
+
+changes.patch — vs baseline 0538998 for compare/page.tsx. Regenerate: commits/REGENERATE_P_PATCHES.md.
+
+Commit target: at least 20 commits, branch + PR to main.
+
+Shipped / reference: ?a=&b= bootstrap, URL sync, swap, copy link, Suspense wrapper.
+
+Follow-up: invalid ID handling, clear URL on reset, extra compare row, loading UX.
+
+Allowed path:
+  frontend/src/app/compare/page.tsx
