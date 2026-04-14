@@ -213,7 +213,7 @@ function MoodContent() {
       {/* Empty state — shown when no mood has been selected yet */}
       {!activeMood && (
         <div className="text-center py-10 text-white/20">
-          <Sparkles className="w-10 h-10 mx-auto mb-3 opacity-30" />
+          <Sparkles aria-hidden="true" className="w-10 h-10 mx-auto mb-3 opacity-30" />
           <p>Select a mood above to discover movies</p>
         </div>
       )}
