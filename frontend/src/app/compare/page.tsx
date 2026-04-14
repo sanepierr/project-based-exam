@@ -3,8 +3,7 @@
 import { useState, useEffect, useRef, Suspense, useCallback } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import {
-  Search, Star, Clock, Calendar, DollarSign, ArrowLeftRight,
-  Loader2, X, Users, TrendingUp,
+  Search, ArrowLeftRight, Loader2, X, Link2, Check, ArrowDownUp,
 } from "lucide-react";
 import { moviesAPI } from "@/lib/api";
 import { posterUrl, formatRuntime, formatCurrency, ratingColor } from "@/lib/utils";
