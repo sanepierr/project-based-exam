@@ -37,6 +37,13 @@ function CompareContent() {
     },
     [router]
   );
+
+  useEffect(() => {
+    const a = searchParams.get("a");
+    const b = searchParams.get("b");
+    if (urlBootstrapDone.current || !a || !b) return;
+    const idA = Number(a);
+    const idB = Number(b);
   async function searchMovies(query: string, side: "A" | "B") {
     if (query.length < 2) {
       side === "A" ? setResultsA([]) : setResultsB([]);
