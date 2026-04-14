@@ -128,7 +128,7 @@ function MoodContent() {
         <div>
           {/* Error banner shown when mood movie fetch fails */}
           {loadError && (
-            <div className="mb-8 rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-100/90 text-center max-w-xl mx-auto">
+            <div aria-live="polite" className="mb-8 rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-100/90 text-center max-w-xl mx-auto">
               Could not load movies for this mood. Try again or pick a different mood.
             </div>
           )}
