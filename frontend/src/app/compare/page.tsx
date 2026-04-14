@@ -26,6 +26,17 @@ function CompareContent() {
   const [urlLoadError, setUrlLoadError] = useState(false);
   const [badParams, setBadParams] = useState(false);
 
+  const replaceCompareUrl = useCallback(
+    (a: any | null, b: any | null) => {
+      const idA = a ? (a.tmdb_id ?? a.id) : null;
+      const idB = b ? (b.tmdb_id ?? b.id) : null;
+      if (idA && idB) router.replace(`/compare?a=${idA}&b=${idB}`, { scroll: false });
+      else if (idA) router.replace(`/compare?a=${idA}`, { scroll: false });
+      else if (idB) router.replace(`/compare?b=${idB}`, { scroll: false });
+      else router.replace("/compare", { scroll: false });
+    },
+    [router]
+  );
   async function searchMovies(query: string, side: "A" | "B") {
     if (query.length < 2) {
       side === "A" ? setResultsA([]) : setResultsB([]);
