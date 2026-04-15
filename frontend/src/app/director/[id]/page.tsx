@@ -81,7 +81,7 @@ export default function DirectorPage() {
 
   return (
     <div className="pt-24 pb-20 max-w-6xl mx-auto px-6 md:px-12">
-      <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
+      <nav className="flex flex-wrap items-center justify-between gap-3 mb-6" aria-label="Page navigation">
         <Link
           href="/search"
           className="inline-flex items-center gap-2 text-sm text-white/40 hover:text-white/70"
@@ -104,7 +104,7 @@ export default function DirectorPage() {
           {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Link2 className="w-3.5 h-3.5" />}
           {copied ? "Copied" : "Copy profile link"}
         </button>
-      </div>
+      </nav>
 
       {/* Header */}
       <div className="flex flex-col sm:flex-row gap-8 mb-12">
