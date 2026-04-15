@@ -159,6 +159,18 @@ function MoodContent() {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [focusedIndex, router]);
 
+  // Modal keyboard handling
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (!showQuiz) return;
+      if (e.key === "Escape") {
+        setShowQuiz(false);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [showQuiz]);
+
   useEffect(() => {
     const handleScroll = () => {
       setShowBackToTop(window.scrollY > 300);
@@ -336,6 +348,7 @@ function MoodContent() {
             router.push(`/mood?mood=${randomMood.slug}`);
           }}
           className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-gold/10 hover:bg-gold/20 border border-gold/20 text-gold font-semibold transition-all duration-200 hover:scale-105"
+          aria-label="Select a random mood for you"
         >
           <Shuffle className="w-4 h-4" />
           Surprise Me
@@ -343,6 +356,7 @@ function MoodContent() {
         <button
           onClick={() => setShowQuiz(true)}
           className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-white/10 hover:bg-white/20 border border-white/20 text-white font-semibold transition-all duration-200 hover:scale-105 ml-4"
+          aria-label="Take an interactive mood quiz to find your perfect mood"
         >
           <HelpCircle className="w-4 h-4" />
           Take Quiz
@@ -353,6 +367,7 @@ function MoodContent() {
             setActiveMood(suggestedMood);
           }}
           className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-white/10 hover:bg-white/20 border border-white/20 text-white font-semibold transition-all duration-200 hover:scale-105 ml-4"
+          aria-label="Get a mood suggestion based on the current time of day"
         >
           <Calendar className="w-4 h-4" />
           Time-Based Mood
@@ -649,17 +664,23 @@ function MoodContent() {
 
       {/* Mood Quiz Modal */}
       {showQuiz && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="quiz-title"
+        >
           <div className="bg-gradient-to-br from-slate-900/95 to-slate-800/95 rounded-2xl border border-white/10 max-w-md w-full max-h-[90vh] overflow-y-auto">
             <div className="p-6">
               <div className="flex items-center justify-between mb-6">
-                <h3 className="text-xl font-semibold text-white flex items-center gap-2">
+                <h3 id="quiz-title" className="text-xl font-semibold text-white flex items-center gap-2">
                   <HelpCircle className="w-5 h-5 text-gold" />
                   Mood Quiz
                 </h3>
                 <button
                   onClick={() => setShowQuiz(false)}
                   className="text-white/60 hover:text-white transition-colors"
+                  aria-label="Close mood quiz"
                 >
                   <X className="w-5 h-5" />
                 </button>
@@ -690,6 +711,7 @@ function MoodContent() {
                   {QUIZ_QUESTIONS[quizStep].options.map((option, index) => (
                     <button
                       key={index}
+                      autoFocus={index === 0}
                       onClick={() => {
                         const newAnswers = [...quizAnswers];
                         newAnswers[quizStep] = option.mood;
@@ -700,6 +722,7 @@ function MoodContent() {
                           ? 'border-gold bg-gold/10 text-gold'
                           : 'border-white/20 bg-white/5 text-white hover:border-white/30'
                       }`}
+                      aria-pressed={quizAnswers[quizStep] === option.mood}
                     >
                       {option.label}
                     </button>
