@@ -116,7 +116,7 @@ function GenreContent() {
                 /* ignore */
               }
             }}
-            className="inline-flex items-center gap-2 h-10 px-4 rounded-xl glass-card text-xs font-medium text-white/70 hover:text-white hover:border-gold/20 transition-all"
+            className="inline-flex items-center gap-2 h-10 px-4 rounded-xl glass-card text-xs font-medium text-white/70 hover:text-white hover:bg-white/5 active:scale-95 hover:border-gold/20 transition-all"
           >
             {copied ? (
               <Check className="w-3.5 h-3.5 text-emerald-400" />
