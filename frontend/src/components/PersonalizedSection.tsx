@@ -48,7 +48,7 @@ export default function PersonalizedSection({ movies }: PersonalizedSectionProps
     isAuthenticated &&
     !pLoading &&
     personalized !== null &&
-    (personalized?.length ?? 0) > 0;
+    (personalized !== null && (personalized?.length ?? 0) > 0);
   const source = usingPersonalized ? personalized! : safeFallback;
 
   const featured = source.slice(0, 4);
