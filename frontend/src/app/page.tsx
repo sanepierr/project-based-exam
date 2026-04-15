@@ -8,10 +8,16 @@ import HeroSection from "@/components/HeroSection";
 import PersonalizedSection from "@/components/PersonalizedSection";
 import MoodTeaser from "@/components/MoodTeaser";
 import { moviesAPI } from "@/lib/api";
-import type { MovieCompact } from "@/types/movie";
+import type { MovieCompact, PaginatedResponse } from "@/types/movie";
+
+function asMovieList(value: unknown): MovieCompact[] {
+  if (!value || typeof value !== "object") return [];
+  const results = (value as PaginatedResponse<MovieCompact>).results;
+  return Array.isArray(results) ? results : [];
+}
 
 export default function HomePage() {
-  const [trending, setTrending] = useState<any>({});
+  const [trending, setTrending] = useState<MovieCompact[]>([]);
   const [nowPlaying, setNowPlaying] = useState<MovieCompact[]>([]);
   const [topRated, setTopRated] = useState<MovieCompact[]>([]);
   const [loading, setLoading] = useState(true);
@@ -25,9 +31,9 @@ export default function HomePage() {
           moviesAPI.topRated(),
         ]);
 
-        if (trendRes.status === "fulfilled") setTrending(trendRes.value);
-        if (npRes.status === "fulfilled") setNowPlaying(npRes.value.results);
-        if (trRes.status === "fulfilled") setTopRated(trRes.value.results);
+        if (trendRes.status === "fulfilled") setTrending(asMovieList(trendRes.value));
+        if (npRes.status === "fulfilled") setNowPlaying(asMovieList(npRes.value));
+        if (trRes.status === "fulfilled") setTopRated(asMovieList(trRes.value));
       } catch (err) {
         console.error("Failed to fetch movies:", err);
       } finally {

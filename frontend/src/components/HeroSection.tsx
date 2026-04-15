@@ -18,7 +18,8 @@ export default function HeroSection({ movies }: HeroSectionProps) {
   const [isPaused, setIsPaused] = useState(false);
   const [progressKey, setProgressKey] = useState(0);
 
-  const heroMovies = movies.slice(0, 6);
+  const list = Array.isArray(movies) ? movies : [];
+  const heroMovies = list.slice(0, 6);
 
   const goTo = useCallback(
     (index: number) => {
