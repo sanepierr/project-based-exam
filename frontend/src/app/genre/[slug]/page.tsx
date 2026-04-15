@@ -27,6 +27,7 @@ function GenreContent() {
     ? sortParam
     : "popularity.desc";
 
+  // Ensure accurate pagination boundaries
   const initialPage = Math.max(1, Number.parseInt(searchParams.get("page") || "1", 10) || 1);
 
   const [movies, setMovies] = useState<MovieCompact[]>([]);
