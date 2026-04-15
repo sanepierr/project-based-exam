@@ -4,10 +4,14 @@ import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowLeft, Calendar, MapPin, Film, Star, Users } from "lucide-react";
-import MovieCard, { MovieCardSkeleton } from "@/components/MovieCard";
+import {
+  ArrowLeft, Calendar, MapPin, Film, Star, Users, Link2, Check, ChevronDown, ExternalLink,
+} from "lucide-react";
+import MovieCard from "@/components/MovieCard";
 import { peopleAPI } from "@/lib/api";
-import { formatDate, posterUrl } from "@/lib/utils";
+import { formatDate } from "@/lib/utils";
+
+type FilmFilter = "all" | "directed" | "acted";
 
 export default function DirectorPage() {
   const params = useParams();
@@ -15,6 +19,9 @@ export default function DirectorPage() {
 
   const [person, setPerson] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [bioExpanded, setBioExpanded] = useState(false);
+  const [filmFilter, setFilmFilter] = useState<FilmFilter>("all");
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     if (!personId) return;
@@ -69,14 +76,35 @@ export default function DirectorPage() {
   const directedMovies = person.directed_movies || [];
   const actedMovies = person.acted_movies || [];
 
+  const showDirected = filmFilter === "all" || filmFilter === "directed";
+  const showActed = filmFilter === "all" || filmFilter === "acted";
+
   return (
     <div className="pt-24 pb-20 max-w-6xl mx-auto px-6 md:px-12">
-      <Link
-        href="/search"
-        className="inline-flex items-center gap-2 text-sm text-white/40 hover:text-white/70 mb-6"
-      >
-        <ArrowLeft className="w-4 h-4" /> Back
-      </Link>
+      <nav className="flex flex-wrap items-center justify-between gap-3 mb-6" aria-label="Page navigation">
+        <Link
+          href="/search"
+          className="inline-flex items-center gap-2 text-sm text-white/40 hover:text-white/70"
+        >
+          <ArrowLeft className="w-4 h-4" /> Back
+        </Link>
+        <button
+          type="button"
+          onClick={async () => {
+            try {
+              await navigator.clipboard.writeText(window.location.href);
+              setCopied(true);
+              setTimeout(() => setCopied(false), 2000);
+            } catch {
+              /* ignore */
+            }
+          }}
+          className="inline-flex items-center gap-2 h-9 px-3 rounded-xl glass-card text-xs text-white/70 hover:text-white"
+        >
+          {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Link2 className="w-3.5 h-3.5" />}
+          {copied ? "Copied" : "Copy profile link"}
+        </button>
+      </nav>
 
       {/* Header */}
       <div className="flex flex-col sm:flex-row gap-8 mb-12">
@@ -93,7 +121,7 @@ export default function DirectorPage() {
                 unoptimized
               />
             ) : (
-              <div className="w-full h-full flex items-center justify-center text-4xl text-white/20">
+              <div className="w-full h-full flex items-center justify-center text-4xl text-white/20" aria-label={`${person.name} placeholder`}>
                 {person.name?.[0]}
               </div>
             )}
@@ -125,12 +153,30 @@ export default function DirectorPage() {
           </div>
 
           {person.biography && (
-            <p className="text-white/60 leading-relaxed max-w-2xl line-clamp-6">
-              {person.biography}
-            </p>
+            <div className="max-w-2xl">
+              <p
+                className={`text-white/60 leading-relaxed ${
+                  bioExpanded ? "" : "line-clamp-6"
+                }`}
+              >
+                {person.biography}
+              </p>
+              {person.biography.length > 280 && (
+                <button
+                  type="button"
+                  onClick={() => setBioExpanded((e) => !e)}
+                  className="mt-2 inline-flex items-center gap-1 text-xs font-medium text-gold/80 hover:text-gold"
+                >
+                  {bioExpanded ? "Show less" : "Read more"}
+                  <ChevronDown
+                    className={`w-3.5 h-3.5 transition-transform ${bioExpanded ? "rotate-180" : ""}`}
+                  />
+                </button>
+              )}
+            </div>
           )}
 
-          <div className="flex gap-6 pt-2">
+          <div className="flex flex-wrap gap-6 pt-2">
             {directedMovies.length > 0 && (
               <div className="flex items-center gap-2 text-sm">
                 <Film className="w-4 h-4 text-gold" />
@@ -144,13 +190,48 @@ export default function DirectorPage() {
               </div>
             )}
           </div>
+
+          <a
+            href={`https://www.themoviedb.org/person/${personId}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1.5 text-xs font-medium text-gold/80 hover:text-gold mt-2"
+          >
+            View on TMDB
+            <ExternalLink className="w-3.5 h-3.5" />
+          </a>
+
+          {(directedMovies.length > 0 || actedMovies.length > 0) && (
+            <div className="flex flex-wrap gap-2 pt-4" role="tablist" aria-label="Filmography filter">
+              {[
+                { id: "all" as const, label: "All credits" },
+                ...(directedMovies.length > 0 ? [{ id: "directed" as const, label: "Directed only" }] : []),
+                ...(actedMovies.length > 0 ? [{ id: "acted" as const, label: "Acting only" }] : []),
+              ].map((tab) => (
+                <button
+                  key={tab.id}
+                  type="button"
+                  role="tab"
+                  aria-selected={filmFilter === tab.id}
+                  onClick={() => setFilmFilter(tab.id)}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
+                    filmFilter === tab.id
+                      ? "border-gold/40 bg-gold/10 text-gold"
+                      : "border-white/[0.08] text-white/45 hover:text-white/70"
+                  }`}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 
       {/* Directed movies */}
-      {directedMovies.length > 0 && (
-        <section className="mb-12">
-          <h2 className="text-xl font-bold font-display flex items-center gap-2 mb-6">
+      {directedMovies.length > 0 && showDirected && (
+        <section className="mb-12" aria-labelledby="directed-heading">
+          <h2 id="directed-heading" className="text-xl font-bold font-display flex items-center gap-2 mb-6">
             <Film className="w-5 h-5 text-gold" />
             Directed
           </h2>
@@ -163,9 +244,9 @@ export default function DirectorPage() {
       )}
 
       {/* Acted in */}
-      {actedMovies.length > 0 && (
-        <section>
-          <h2 className="text-xl font-bold font-display flex items-center gap-2 mb-6">
+      {actedMovies.length > 0 && showActed && (
+        <section aria-labelledby="acted-heading">
+          <h2 id="acted-heading" className="text-xl font-bold font-display flex items-center gap-2 mb-6">
             <Users className="w-5 h-5 text-gold" />
             Acted In
           </h2>

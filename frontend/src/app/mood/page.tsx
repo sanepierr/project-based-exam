@@ -5,7 +5,7 @@ import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import {
   Sparkles, Heart, Zap, Flame, Brain, Smile, Ghost,
-  Mountain, Baby, BookOpen, ArrowLeft, Loader2,
+  Mountain, Baby, BookOpen, ArrowLeft, Loader2, Shuffle, Star, Share,
 } from "lucide-react";
 import MovieCard, { MovieCardSkeleton } from "@/components/MovieCard";
 import { moviesAPI } from "@/lib/api";
@@ -24,7 +24,22 @@ const MOODS = [
   { slug: "documentary-deep-dive", label: "Documentary", icon: BookOpen, color: "from-cyan-500/15 to-sky-600/15", iconColor: "text-cyan-400", desc: "Real stories" },
 ];
 
+const MOOD_RECOMMENDATIONS: Record<string, string[]> = {
+  "cozy-night": ["feel-good", "date-night"],
+  adrenaline: ["edge-of-seat", "epic-adventure"],
+  "date-night": ["cozy-night", "feel-good"],
+  "mind-bender": ["edge-of-seat", "documentary-deep-dive"],
+  "feel-good": ["cozy-night", "family-fun"],
+  "edge-of-seat": ["adrenaline", "mind-bender"],
+  "epic-adventure": ["adrenaline", "family-fun"],
+  "cry-it-out": ["date-night", "documentary-deep-dive"],
+  "family-fun": ["feel-good", "epic-adventure"],
+  "documentary-deep-dive": ["mind-bender", "cry-it-out"],
+};
+
 function MoodContent() {
+  const renderSkeletons = () => Array.from({ length: 18 }).map((_, i) => <MovieCardSkeleton key={i} />);
+
   const searchParams = useSearchParams();
   const router = useRouter();
   const activeMood = searchParams.get("mood") || "";
@@ -32,31 +47,128 @@ function MoodContent() {
   const [movies, setMovies] = useState<MovieCompact[]>([]);
   const [moodInfo, setMoodInfo] = useState<any>(null);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [totalResults, setTotalResults] = useState(0);
+  const [sortBy, setSortBy] = useState("popularity.desc");
+  const [favorites, setFavorites] = useState<string[]>([]);
+  const [history, setHistory] = useState<string[]>([]);
+  const [recommended, setRecommended] = useState<typeof MOODS>([]);
+  const [infiniteScroll, setInfiniteScroll] = useState(false);
+  const [stats, setStats] = useState<{ averageRating: number; topGenres: string[] }>({ averageRating: 0, topGenres: [] });
+  const [error, setError] = useState<string>("");
+  const [toastMessage, setToastMessage] = useState<string>("");
+  const [focusedIndex, setFocusedIndex] = useState<number>(-1);
+  const [showBackToTop, setShowBackToTop] = useState(false);
+  const [themeColor, setThemeColor] = useState<string>("");
 
   useEffect(() => {
     if (!activeMood) return;
     fetchMoodMovies(activeMood, 1);
+    setHistory((currentHistory) => {
+      const newHistory = [activeMood, ...currentHistory.filter(h => h !== activeMood)].slice(0, 5);
+      localStorage.setItem("moodHistory", JSON.stringify(newHistory));
+      return newHistory;
+    });
+    const recommendedSlugs = MOOD_RECOMMENDATIONS[activeMood] || [];
+    setRecommended(MOODS.filter((m) => recommendedSlugs.includes(m.slug)));
   }, [activeMood]);
 
-  async function fetchMoodMovies(slug: string, p: number) {
+  useEffect(() => {
+    const mood = MOODS.find(m => m.slug === activeMood);
+    setThemeColor(mood ? mood.color : "");
+  }, [activeMood]);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (focusedIndex === -1) return;
+      if (e.key === "Enter") {
+        const mood = MOODS[focusedIndex];
+        setToastMessage(`Selected ${mood.label}`);
+        setTimeout(() => setToastMessage(""), 2000);
+        router.push(`/mood?mood=${mood.slug}`);
+      } else if (e.key === "ArrowRight") {
+        setFocusedIndex((prev) => (prev + 1) % MOODS.length);
+      } else if (e.key === "ArrowLeft") {
+        setFocusedIndex((prev) => (prev - 1 + MOODS.length) % MOODS.length);
+      } else if (e.key === "ArrowDown") {
+        setFocusedIndex((prev) => Math.min(prev + 5, MOODS.length - 1));
+      } else if (e.key === "ArrowUp") {
+        setFocusedIndex((prev) => Math.max(prev - 5, 0));
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [focusedIndex, router]);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setShowBackToTop(window.scrollY > 300);
+    };
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  useEffect(() => {
+    const saved = localStorage.getItem("moodFavorites");
+    if (saved) setFavorites(JSON.parse(saved));
+    const savedHistory = localStorage.getItem("moodHistory");
+    if (savedHistory) setHistory(JSON.parse(savedHistory));
+  }, []);
+
+  async function fetchMoodMovies(slug: string, p: number, sort?: string, append = false) {
     setLoading(true);
+    setError("");
+    setError(null);
     try {
-      const data = await moviesAPI.getMoodMovies(slug, p);
-      setMovies(data.results || []);
+      const data = await moviesAPI.getMoodMovies(slug, p, sort || sortBy);
+      const nextMovies = append ? [...movies, ...(data.results || [])] : (data.results || []);
+      setMovies(nextMovies);
       setMoodInfo(data.mood);
       setTotalPages(data.total_pages || 1);
+      setTotalResults(data.total_results || 0);
       setPage(p);
+
+      const averageRating = nextMovies.length
+        ? nextMovies.reduce((sum, movie) => sum + movie.vote_average, 0) / nextMovies.length
+        : 0;
+      const genreCounts: Record<string, number> = {};
+      nextMovies.forEach((movie) => {
+        movie.genres?.forEach((genre) => {
+          genreCounts[genre.name] = (genreCounts[genre.name] || 0) + 1;
+        });
+      });
+      const topGenres = Object.entries(genreCounts)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 3)
+        .map(([name]) => name);
+      setStats({ averageRating: Number(averageRating.toFixed(1)), topGenres });
     } catch (err) {
       console.error(err);
+      setError("Failed to load movies. Please try again.");
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    } catch (err: any) {
+      console.error(err);
+      setError(err.message || 'Failed to fetch movies matching this mood. Please try again.');
     } finally {
       setLoading(false);
     }
   }
 
   return (
-    <div className="pt-24 pb-20 px-6 md:px-10 lg:px-20 max-w-[1440px] mx-auto">
+    <div className={`pt-24 pb-20 px-6 md:px-10 lg:px-20 max-w-[1440px] mx-auto transition-all duration-500 ${themeColor ? `bg-gradient-to-br ${themeColor}` : ""}`}>
+      {/* Toast */}
+      {toastMessage && (
+        <div
+          className="fixed top-4 left-1/2 transform -translate-x-1/2 z-50 bg-gold/90 text-black px-4 py-2 rounded-lg font-semibold transition-opacity duration-300"
+          role="status"
+          aria-live="polite"
+        >
+          {toastMessage}
+        </div>
+      )}
+
       {/* Header */}
       <div className="text-center mb-12">
         <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-gold/10 border border-gold/15 mb-5">
@@ -73,6 +185,22 @@ function MoodContent() {
         </p>
       </div>
 
+      {/* Surprise Me Button */}
+      <div className="flex justify-center mb-8">
+        <button
+          onClick={() => {
+            const randomMood = MOODS[Math.floor(Math.random() * MOODS.length)];
+            setToastMessage(`Surprise! Selected ${randomMood.label}`);
+            setTimeout(() => setToastMessage(""), 2000);
+            router.push(`/mood?mood=${randomMood.slug}`);
+          }}
+          className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-gold/10 hover:bg-gold/20 border border-gold/20 text-gold font-semibold transition-all duration-200 hover:scale-105"
+        >
+          <Shuffle className="w-4 h-4" />
+          Surprise Me
+        </button>
+      </div>
+
       {/* Mood grid */}
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3 mb-14">
         {MOODS.map((mood) => {
@@ -81,10 +209,19 @@ function MoodContent() {
           return (
             <button
               key={mood.slug}
-              onClick={() => router.push(`/mood?mood=${mood.slug}`)}
+              onClick={() => { if (!isActive) router.push(`/mood?mood=${mood.slug}`) }}
               className={`genre-card glass-card group relative overflow-hidden rounded-xl p-5 text-center transition-all duration-300 ${
+              tabIndex={0}
+              onFocus={() => setFocusedIndex(MOODS.findIndex(m => m.slug === mood.slug))}
+              onClick={() => {
+                setToastMessage(`Selected ${mood.label}`);
+                setTimeout(() => setToastMessage(""), 2000);
+                router.push(`/mood?mood=${mood.slug}`);
+              }}
+              className={`genre-card glass-card group relative overflow-hidden rounded-xl p-5 text-center transition-all duration-300 hover:scale-105 focus:outline-none focus:ring-2 focus:ring-gold/50 ${
                 isActive ? "ring-2 ring-gold/40 scale-[1.03]" : ""
               }`}
+              aria-label={`Select ${mood.label}`}
             >
               <div className={`absolute inset-0 bg-gradient-to-br ${mood.color} ${isActive ? "opacity-100" : "opacity-0 group-hover:opacity-100"} transition-opacity duration-500`} />
               <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-gold/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
@@ -92,7 +229,10 @@ function MoodContent() {
               <div className="relative z-10">
                 <Icon className={`w-6 h-6 mx-auto mb-2 ${isActive ? mood.iconColor : "text-white/30"} group-hover:${mood.iconColor} transition-colors`} />
                 <p className="text-sm font-semibold text-white/80 mb-0.5">{mood.label}</p>
-                <p className="text-[10px] text-white/30">{mood.desc}</p>
+                <p className="text-[10px] text-white/30 group-hover:opacity-0 transition-opacity">{mood.desc}</p>
+                <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-black/80 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">
+                  {mood.desc}
+                </div>
               </div>
             </button>
           );
@@ -103,34 +243,161 @@ function MoodContent() {
       {activeMood && (
         <div>
           {moodInfo && (
+            <div className="flex flex-col gap-5 mb-8">
+              <div className="flex items-start justify-between gap-6 flex-wrap">
+                <div>
+                  <h2 className="text-2xl font-bold font-display">{moodInfo.label}</h2>
+                  <p className="text-sm text-white/30 mt-0.5">{moodInfo.description}</p>
+                </div>
+                <div className="flex items-center gap-4">
+                  {totalResults > 0 && (
+                    <div className="text-sm text-white/50">
+                      {totalResults.toLocaleString()} movies
+                    </div>
+                  )}
+                  <button
+                    onClick={() => {
+                      const newFavorites = favorites.includes(activeMood)
+                        ? favorites.filter(f => f !== activeMood)
+                        : [...favorites, activeMood];
+                      setFavorites(newFavorites);
+                      localStorage.setItem("moodFavorites", JSON.stringify(newFavorites));
+                      setToastMessage(favorites.includes(activeMood) ? "Removed from favorites" : "Added to favorites");
+                      setTimeout(() => setToastMessage(""), 2000);
+                    }}
+                    className={`p-2 rounded-lg transition-colors ${favorites.includes(activeMood) ? "bg-yellow-500/20 text-yellow-400" : "bg-white/10 text-white/50 hover:text-white"}`}
+                    aria-label={favorites.includes(activeMood) ? "Remove mood from favorites" : "Add mood to favorites"}
+                  >
+                    <Star className={`w-4 h-4 ${favorites.includes(activeMood) ? "fill-current" : ""}`} />
+                  </button>
+                  <button
+                    onClick={() => {
+                      const url = `${window.location.origin}/mood?mood=${activeMood}`;
+                      navigator.clipboard.writeText(url);
+                      setToastMessage("Link copied to clipboard!");
+                      setTimeout(() => setToastMessage(""), 2000);
+                    }}
+                    className="p-2 rounded-lg bg-white/10 text-white/50 hover:text-white transition-colors"
+                    aria-label="Copy mood link"
+                  >
+                    <Share className="w-4 h-4" />
+                  </button>
+                  <select
+                    value={sortBy}
+                    onChange={(e) => {
+                      setSortBy(e.target.value);
+                      fetchMoodMovies(activeMood, 1, e.target.value);
+                    }}
+                    className="px-3 py-1 rounded-lg bg-white/10 border border-white/20 text-sm text-white"
+                    aria-label="Sort mood results"
+                  >
+                    <option value="popularity.desc">Most Popular</option>
+                    <option value="vote_average.desc">Highest Rated</option>
+                    <option value="release_date.desc">Newest</option>
+                    <option value="release_date.asc">Oldest</option>
+                  </select>
+                  <label className="inline-flex items-center gap-2 text-sm text-white/50 ml-3">
+                    <input
+                      type="checkbox"
+                      checked={infiniteScroll}
+                      onChange={() => setInfiniteScroll((current) => !current)}
+                      className="h-4 w-4 rounded border-white/20 bg-white/10 text-gold focus:ring-gold/40"
+                      aria-label="Toggle infinite scroll"
+                    />
+                    Infinite scroll
+                  </label>
+                </div>
             <div className="flex items-center justify-between mb-8">
               <div>
-                <h2 className="text-2xl font-bold font-display">{moodInfo.label}</h2>
+                <div className="flex items-center gap-4">
+                  <h2 className="text-2xl font-bold font-display">{moodInfo.label}</h2>
+                  <button onClick={() => router.push('/mood')} className="text-xs px-3 py-1.5 rounded-lg border border-white/10 hover:bg-white/5 transition-colors text-white/40">Clear</button>
+                </div>
                 <p className="text-sm text-white/30 mt-0.5">{moodInfo.description}</p>
+                {totalResults > 0 && <span className="inline-block mt-2 text-[11px] px-2 py-1 bg-white/5 rounded-md text-white/40">{totalResults} titles found</span>}
               </div>
+
+              {stats.averageRating > 0 && (
+                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 mb-8">
+                  <div className="rounded-3xl border border-white/10 bg-white/5 p-4">
+                    <p className="text-sm text-white/50">Average rating</p>
+                    <p className="text-2xl font-bold text-white mt-2">{stats.averageRating}</p>
+                  </div>
+                  <div className="rounded-3xl border border-white/10 bg-white/5 p-4 sm:col-span-2">
+                    <p className="text-sm text-white/50">Top genres</p>
+                    <p className="text-base text-white mt-2">{stats.topGenres.join(" • ") || "—"}</p>
+                  </div>
+                </div>
+              )}
+
+              {recommended.length > 0 && (
+                <div className="flex flex-col gap-3">
+                  <p className="text-sm text-white/50">You might also enjoy:</p>
+                  <div className="flex flex-wrap gap-2">
+                    {recommended.map((mood) => (
+                      <button
+                        key={mood.slug}
+                        onClick={() => router.push(`/mood?mood=${mood.slug}`)}
+                        className="rounded-full border border-white/10 bg-white/10 px-4 py-2 text-sm text-white transition-all duration-200 hover:border-gold/40 hover:bg-gold/10"
+                        aria-label={`Try ${mood.label} next`}
+                      >
+                        {mood.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
-          {loading ? (
+          {error ? (
+            <div className="flex flex-col items-center justify-center py-20 text-center glass-card rounded-2xl border border-red-500/10">
+              <Zap className="w-10 h-10 text-red-400 mb-4" />
+              <h3 className="text-xl font-display font-medium text-white/90 mb-2">Something went wrong</h3>
+              <p className="text-sm text-white/40 mb-6">{error}</p>
+              <button type="button" onClick={() => fetchMoodMovies(activeMood, page)} className="px-6 py-2.5 rounded-xl bg-red-500/10 text-red-400 text-sm font-medium hover:bg-red-500/20 transition-colors">
+                Retry
+              </button>
+            </div>
+          ) : loading ? (
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-5">
+              {renderSkeletons()}
+          {loading ? (
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-5 relative">
+              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent animate-pulse" />
               {Array.from({ length: 18 }).map((_, i) => (
                 <MovieCardSkeleton key={i} />
               ))}
             </div>
+          ) : error ? (
+            <div className="text-center py-10">
+              <p className="text-red-400 mb-4">{error}</p>
+              <button
+                onClick={() => fetchMoodMovies(activeMood, page)}
+                className="px-6 py-2 bg-red-500/20 hover:bg-red-500/30 text-red-400 rounded-lg transition-colors"
+              >
+                Retry
+              </button>
+            </div>
           ) : (
             <>
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-5">
+              <div
+                className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-5"
+                style={{ opacity: loading ? 0.7 : 1, transition: "opacity 300ms ease" }}
+                aria-live="polite"
+              >
                 {movies.map((movie, i) => (
                   <MovieCard key={movie.id || movie.tmdb_id} movie={movie} showOverview index={i} />
                 ))}
               </div>
 
-              {totalPages > 1 && (
+              {totalPages > 1 && !infiniteScroll && (
                 <div className="flex items-center justify-center gap-3 mt-12">
                   <button
                     onClick={() => fetchMoodMovies(activeMood, page - 1)}
                     disabled={page <= 1}
-                    className="px-5 py-2.5 rounded-xl glass-card text-sm font-medium disabled:opacity-20"
+                    className="px-5 py-2.5 rounded-xl glass-card text-sm font-medium disabled:opacity-20 hover:bg-white/5 transition-all active:scale-95"
+                    className="px-5 py-2.5 rounded-xl glass-card text-sm font-medium disabled:opacity-30 disabled:cursor-not-allowed hover:bg-white/10 transition-colors disabled:hover:bg-transparent"
                   >
                     Previous
                   </button>
@@ -138,15 +405,38 @@ function MoodContent() {
                   <button
                     onClick={() => fetchMoodMovies(activeMood, page + 1)}
                     disabled={page >= totalPages}
-                    className="px-5 py-2.5 rounded-xl glass-card text-sm font-medium disabled:opacity-20"
+                    className="px-5 py-2.5 rounded-xl glass-card text-sm font-medium disabled:opacity-20 hover:bg-white/5 transition-all active:scale-95"
+                    className="px-5 py-2.5 rounded-xl glass-card text-sm font-medium disabled:opacity-30 disabled:cursor-not-allowed hover:bg-white/10 transition-colors disabled:hover:bg-transparent"
                   >
                     Next
+                  </button>
+                </div>
+              )}
+              {totalPages > 1 && infiniteScroll && (
+                <div className="flex justify-center mt-12">
+                  <button
+                    onClick={() => fetchMoodMovies(activeMood, page + 1, sortBy, true)}
+                    disabled={page >= totalPages}
+                    className="px-6 py-3 rounded-xl glass-card text-sm font-medium disabled:opacity-30 disabled:cursor-not-allowed hover:bg-white/10 transition-colors disabled:hover:bg-transparent"
+                    aria-label="Load more movies"
+                  >
+                    Load more movies
                   </button>
                 </div>
               )}
             </>
           )}
         </div>
+      )}
+
+      {/* Back to Top Button */}
+      {showBackToTop && (
+        <button
+          onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+          className="fixed bottom-8 right-8 z-40 bg-gold/20 hover:bg-gold/30 border border-gold/30 text-gold p-3 rounded-full transition-all duration-200 hover:scale-110"
+        >
+          <ArrowLeft className="w-5 h-5 rotate-[-90deg]" />
+        </button>
       )}
 
       {/* Empty state */}
