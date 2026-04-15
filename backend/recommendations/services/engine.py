@@ -23,6 +23,10 @@ class RecommendationEngine:
         self.tmdb = TMDBService()
 
     def compute_genre_preferences(self, user) -> list:
+        """
+        Compute top genre preferences for a given user based on their past interactions.
+        Returns a sorted list of tuples containing (genre_id, normalized_score_0_to_100).
+        """
         from recommendations.models import UserMovieInteraction, UserGenrePreference
 
         interactions = UserMovieInteraction.objects.filter(user=user)
