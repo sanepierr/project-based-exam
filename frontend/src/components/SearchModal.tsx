@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
-import { Search, Loader2, Star } from "lucide-react";
+import { Search, Loader2, Star, Clock, X } from "lucide-react";
 import { moviesAPI } from "@/lib/api";
 import { posterUrl } from "@/lib/utils";
 import type { MovieCompact } from "@/types/movie";
@@ -16,6 +16,27 @@ const SEARCH_HINTS = [
   "Studio Ghibli",
 ];
 
+const RECENT_KEY = "cq_recent_searches";
+const MAX_RECENT = 5;
+
+function getRecent(): string[] {
+  if (typeof window === "undefined") return [];
+  try {
+    return JSON.parse(localStorage.getItem(RECENT_KEY) || "[]");
+  } catch {
+    return [];
+  }
+}
+
+function saveRecent(term: string) {
+  const next = [term, ...getRecent().filter((q) => q !== term)].slice(0, MAX_RECENT);
+  localStorage.setItem(RECENT_KEY, JSON.stringify(next));
+}
+
+function clearRecent() {
+  localStorage.removeItem(RECENT_KEY);
+}
+
 interface SearchModalProps {
   open: boolean;
   onClose: () => void;
@@ -26,12 +47,14 @@ export default function SearchModal({ open, onClose }: SearchModalProps) {
   const [results, setResults] = useState<MovieCompact[]>([]);
   const [loading, setLoading] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(-1);
+  const [recentSearches, setRecentSearches] = useState<string[]>([]);
   const inputRef = useRef<HTMLInputElement>(null);
   const requestIdRef = useRef(0);
   const router = useRouter();
 
   useEffect(() => {
     if (open) {
+      setRecentSearches(getRecent());
       setTimeout(() => inputRef.current?.focus(), 100);
     } else {
       setQuery("");
@@ -102,7 +125,8 @@ export default function SearchModal({ open, onClose }: SearchModalProps) {
   };
 
   const handleSelect = useCallback(
-    (tmdbId: number) => {
+    (tmdbId: number, title?: string) => {
+      if (title) saveRecent(title);
       router.push(`/movie/${tmdbId}`);
       onClose();
     },
@@ -112,6 +136,7 @@ export default function SearchModal({ open, onClose }: SearchModalProps) {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (query.trim()) {
+      saveRecent(query.trim());
       router.push(`/search?q=${encodeURIComponent(query.trim())}`);
       onClose();
     }
@@ -177,7 +202,7 @@ export default function SearchModal({ open, onClose }: SearchModalProps) {
               {results.map((movie, i) => (
                 <button
                   key={movie.id || movie.tmdb_id}
-                  onClick={() => handleSelect(movie.tmdb_id || movie.id)}
+                  onClick={() => handleSelect(movie.tmdb_id || movie.id, movie.title)}
                   role="option"
                   aria-selected={i === selectedIndex}
                   className={`w-full flex items-center gap-4 p-3 rounded-xl transition-all text-left focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-gold/40 ${
@@ -194,6 +219,9 @@ export default function SearchModal({ open, onClose }: SearchModalProps) {
                       height={66}
                       className="w-full h-full object-cover"
                       unoptimized
+                      onError={(e) => {
+                        (e.currentTarget as HTMLImageElement).src = "/placeholder-poster.svg";
+                      }}
                     />
                   </div>
                   <div className="flex-1 min-w-0">
@@ -209,6 +237,18 @@ export default function SearchModal({ open, onClose }: SearchModalProps) {
                         </span>
                       )}
                     </div>
+                    {movie.genres && movie.genres.length > 0 && (
+                      <div className="flex gap-1 mt-1.5 flex-wrap">
+                        {movie.genres.slice(0, 2).map((g) => (
+                          <span
+                            key={g.id}
+                            className="px-1.5 py-0.5 rounded-md bg-white/[0.04] border border-white/[0.06] text-[10px] text-white/30"
+                          >
+                            {g.name}
+                          </span>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 </button>
               ))}
@@ -239,20 +279,53 @@ export default function SearchModal({ open, onClose }: SearchModalProps) {
 
           {/* Empty state */}
           {query.length < 2 && (
-            <div className="p-4 pb-5">
-              <p className="text-[10px] uppercase tracking-wider text-white/20 px-3 py-2 font-semibold">
-                Try searching for
-              </p>
-              <div className="flex flex-wrap gap-2 px-3">
-                {SEARCH_HINTS.map((hint) => (
-                  <button
-                    key={hint}
-                    onClick={() => setQuery(hint)}
-                    className="px-3 py-1.5 rounded-lg bg-white/[0.03] border border-white/[0.06] text-[12px] text-white/40 hover:text-white/60 hover:border-gold/15 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-gold/40 transition-all"
-                  >
-                    {hint}
-                  </button>
-                ))}
+            <div className="p-4 pb-5 space-y-4">
+              {/* Recent searches */}
+              {recentSearches.length > 0 && (
+                <div>
+                  <div className="flex items-center justify-between px-3 py-2">
+                    <p className="text-[10px] uppercase tracking-wider text-white/20 font-semibold">
+                      Recent
+                    </p>
+                    <button
+                      onClick={() => { clearRecent(); setRecentSearches([]); }}
+                      className="flex items-center gap-1 text-[10px] text-white/20 hover:text-white/40 transition-colors"
+                    >
+                      <X className="w-3 h-3" />
+                      Clear
+                    </button>
+                  </div>
+                  <div className="flex flex-wrap gap-2 px-3">
+                    {recentSearches.map((term) => (
+                      <button
+                        key={term}
+                        onClick={() => setQuery(term)}
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/[0.03] border border-white/[0.06] text-[12px] text-white/40 hover:text-white/60 hover:border-gold/15 transition-all"
+                      >
+                        <Clock className="w-3 h-3 text-white/20" />
+                        {term}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Hint chips */}
+              <div>
+                <p className="text-[10px] uppercase tracking-wider text-white/20 px-3 py-2 font-semibold">
+                  Try searching for
+                </p>
+                <div className="flex flex-wrap gap-2 px-3">
+                  {SEARCH_HINTS.map((hint) => (
+                    <button
+                      key={hint}
+                      onClick={() => setQuery(hint)}
+                      className="px-3 py-1.5 rounded-lg bg-white/[0.03] border border-white/[0.06] text-[12px] text-white/40 hover:text-white/60 hover:border-gold/15 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-gold/40 transition-all"
+                    >
+                      {hint}
+                    </button>
+                  ))}
+                </div>
               </div>
             </div>
           )}
