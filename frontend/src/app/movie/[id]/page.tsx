@@ -11,7 +11,7 @@ import {
 } from "lucide-react";
 import MovieCarousel from "@/components/MovieCarousel";
 import MovieCard from "@/components/MovieCard";
-import { moviesAPI, recommendationsAPI } from "@/lib/api";
+import { moviesAPI, recommendationsAPI, API_BASE } from "@/lib/api";
 import { useAuth } from "@/lib/AuthContext";
 import {
   posterUrl, backdropUrl, formatRuntime, formatCurrency,
@@ -97,8 +97,8 @@ export default function MovieDetailPage() {
             .catch(() => {});
         }
         const recData = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL}/movies/tmdb/${tmdbId}/`
-        ).then(r => r.json());
+          `${API_BASE}/movies/tmdb/${tmdbId}/`
+        ).then((r) => r.json());
 
         const recs = recData?.recommendations?.results || [];
         setRecommendations(recs.slice(0, 15));
@@ -127,8 +127,8 @@ export default function MovieDetailPage() {
       // Take a random liked movie and get its recommendations
       const randomLiked = liked[Math.floor(Math.random() * liked.length)];
       const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/movies/tmdb/${randomLiked.id}/`
-      ).then(r => r.json());
+        `${API_BASE}/movies/tmdb/${randomLiked.id}/`
+      ).then((r) => r.json());
       const recs = res?.recommendations?.results || [];
       setLikedRecs(recs.slice(0, 10));
     } catch {
