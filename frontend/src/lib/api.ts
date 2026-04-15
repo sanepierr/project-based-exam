@@ -187,6 +187,32 @@ export const moviesAPI = {
       method: "POST",
       body: JSON.stringify({ description, page }),
     }),
+
+  getVideos: (tmdbId: number) =>
+    apiFetch<{
+      tmdb_id: number;
+      trailer: {
+        key: string;
+        name: string;
+        type: string;
+        embed_url: string;
+        watch_url: string;
+      } | null;
+      all_videos: { key: string; name: string; type: string; site: string }[];
+    }>(`/movies/tmdb/${tmdbId}/videos/`),
+
+  collectionsList: () =>
+    apiFetch<{
+      results: { slug: string; title: string; description: string; movie_count: number }[];
+    }>("/movies/collections/"),
+
+  collectionDetail: (slug: string) =>
+    apiFetch<{
+      slug: string;
+      title: string;
+      description: string;
+      results: MovieCompact[];
+    }>(`/movies/collections/${encodeURIComponent(slug)}/`),
 };
 
 // Genres API
