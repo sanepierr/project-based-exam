@@ -114,6 +114,15 @@ function SearchContent() {
     setQuery(initialQuery);
   }, [initialQuery]);
 
+  // Live debounced search — fires 300ms after user stops typing in the main bar
+  useEffect(() => {
+    if (!query.trim() || query === initialQuery) return;
+    const timer = setTimeout(() => {
+      performSearch(query, 1);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [query]);
+
   async function performSearch(q: string, p: number) {
     if (!q.trim()) return;
     const requestId = startRequest();
