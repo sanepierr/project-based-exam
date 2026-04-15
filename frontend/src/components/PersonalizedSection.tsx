@@ -2,17 +2,57 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { Sparkles, ArrowRight, TrendingUp, Heart, Eye, Bookmark, Star } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Sparkles, ArrowRight, TrendingUp, Heart, Eye, Bookmark, Star, LayoutDashboard, Loader2 } from "lucide-react";
 import { posterUrl } from "@/lib/utils";
+import { useAuth } from "@/lib/AuthContext";
+import { recommendationsAPI } from "@/lib/api";
 import type { MovieCompact } from "@/types/movie";
 
 interface PersonalizedSectionProps {
+  /** Fallback rows when logged out or when /for-you/ has no picks yet */
   movies: MovieCompact[];
 }
 
 export default function PersonalizedSection({ movies }: PersonalizedSectionProps) {
-  const featured = movies.slice(0, 4);
-  const secondary = movies.slice(4, 10);
+  const { isAuthenticated, loading: authLoading } = useAuth();
+  const [personalized, setPersonalized] = useState<MovieCompact[] | null>(null);
+  const [pLoading, setPLoading] = useState(false);
+
+  useEffect(() => {
+    if (!isAuthenticated || authLoading) {
+      setPersonalized(null);
+      setPLoading(false);
+      return;
+    }
+    let cancelled = false;
+    setPLoading(true);
+    recommendationsAPI
+      .forYou(1)
+      .then((data) => {
+        if (!cancelled) setPersonalized(data.results || []);
+      })
+      .catch(() => {
+        if (!cancelled) setPersonalized([]);
+      })
+      .finally(() => {
+        if (!cancelled) setPLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [isAuthenticated, authLoading]);
+
+  const safeFallback = Array.isArray(movies) ? movies : [];
+  const usingPersonalized =
+    isAuthenticated &&
+    !pLoading &&
+    personalized !== null &&
+    (personalized?.length ?? 0) > 0;
+  const source = usingPersonalized ? personalized! : safeFallback;
+
+  const featured = source.slice(0, 4);
+  const secondary = source.slice(4, 10);
 
   return (
     <section className="px-6 md:px-10 lg:px-20">
@@ -29,9 +69,13 @@ export default function PersonalizedSection({ movies }: PersonalizedSectionProps
           {/* Text content */}
           <div className="flex-1 space-y-6">
             <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-gold/10 border border-gold/15">
-              <Sparkles className="w-3.5 h-3.5 text-gold" />
+              {pLoading && isAuthenticated ? (
+                <Loader2 className="w-3.5 h-3.5 text-gold animate-spin" aria-hidden />
+              ) : (
+                <Sparkles className="w-3.5 h-3.5 text-gold" />
+              )}
               <span className="text-[11px] font-semibold uppercase tracking-widest text-gold">
-                Personalized For You
+                {usingPersonalized ? "Picked for you" : "Personalized For You"}
               </span>
             </div>
 
@@ -41,8 +85,9 @@ export default function PersonalizedSection({ movies }: PersonalizedSectionProps
             </h2>
 
             <p className="text-white/40 leading-relaxed max-w-lg">
-              Our recommendation engine learns from what you watch, like, and search for.
-              The more you explore, the smarter your suggestions become.
+              {usingPersonalized
+                ? "These titles match your taste from recent activity. Keep exploring to refine your profile."
+                : "Our recommendation engine learns from what you watch, like, and search for. The more you explore, the smarter your suggestions become."}
             </p>
 
             {/* Feature pills */}
@@ -63,13 +108,24 @@ export default function PersonalizedSection({ movies }: PersonalizedSectionProps
               ))}
             </div>
 
-            <Link
-              href="/search"
-              className="inline-flex items-center gap-2 px-7 py-3.5 rounded-xl bg-gradient-to-r from-gold to-gold-dim text-surface-0 font-semibold text-sm hover:shadow-lg hover:shadow-gold/20 transition-all duration-300 hover:scale-[1.03] active:scale-[0.98] group"
-            >
-              Start Exploring
-              <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
-            </Link>
+            <div className="flex flex-wrap items-center gap-3">
+              <Link
+                href="/search"
+                className="inline-flex items-center gap-2 px-7 py-3.5 rounded-xl bg-gradient-to-r from-gold to-gold-dim text-surface-0 font-semibold text-sm hover:shadow-lg hover:shadow-gold/20 transition-all duration-300 hover:scale-[1.03] active:scale-[0.98] group"
+              >
+                Start Exploring
+                <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
+              </Link>
+              {isAuthenticated && (
+                <Link
+                  href="/dashboard"
+                  className="inline-flex items-center gap-2 px-5 py-3 rounded-xl glass-card text-xs font-semibold text-white/70 hover:text-white border border-white/[0.08] hover:border-gold/25 transition-all"
+                >
+                  <LayoutDashboard className="w-3.5 h-3.5 text-gold/70" />
+                  Dashboard
+                </Link>
+              )}
+            </div>
           </div>
 
           {/* Right:stacked movie posters */}
@@ -115,7 +171,7 @@ export default function PersonalizedSection({ movies }: PersonalizedSectionProps
 
             {/* "Curated picks" label underneath */}
             <p className="text-center text-[11px] text-white/20 mt-4 tracking-wider uppercase">
-              Curated movie picks
+              {usingPersonalized ? "From your For You feed" : "Curated movie picks"}
             </p>
           </div>
         </div>
