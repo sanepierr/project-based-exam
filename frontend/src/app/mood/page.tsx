@@ -113,6 +113,15 @@ function MoodContent() {
   const [scrollTop, setScrollTop] = useState(0);
   const containerHeight = 600;
   const itemHeight = 320;
+
+  // Advanced filtering (must be declared before filteredMovies)
+  const [filters, setFilters] = useState({
+    genres: [] as string[],
+    yearRange: [1900, new Date().getFullYear()] as [number, number],
+    ratingRange: [0, 10] as [number, number],
+    runtimeRange: [0, 300] as [number, number],
+  });
+
   // Filtered movies based on advanced filters
   const filteredMovies = movies.filter(movie => {
     // Genre filter
@@ -149,13 +158,6 @@ function MoodContent() {
   const [searchTimeout, setSearchTimeout] = useState<NodeJS.Timeout | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
 
-  // Advanced filtering
-  const [filters, setFilters] = useState({
-    genres: [] as string[],
-    yearRange: [1900, new Date().getFullYear()] as [number, number],
-    ratingRange: [0, 10] as [number, number],
-    runtimeRange: [0, 300] as [number, number],
-  });
   const [showFilters, setShowFilters] = useState(false);
 
   // Mood analytics
