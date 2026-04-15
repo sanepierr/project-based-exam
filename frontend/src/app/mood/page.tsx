@@ -6,7 +6,7 @@ import Link from "next/link";
 import {
   Sparkles, Heart, Zap, Flame, Brain, Smile, Ghost,
   Mountain, Baby, BookOpen, ArrowLeft, Loader2, Shuffle, Star, Share,
-  Calendar, HelpCircle, CheckCircle, Filter, ChevronDown, BarChart3,
+  Calendar, HelpCircle, CheckCircle, Filter, ChevronDown, BarChart3, X,
 } from "lucide-react";
 import MovieCard, { MovieCardSkeleton } from "@/components/MovieCard";
 import { moviesAPI } from "@/lib/api";
@@ -100,17 +100,19 @@ function MoodContent() {
   const [recommended, setRecommended] = useState<typeof MOODS>([]);
   const [infiniteScroll, setInfiniteScroll] = useState(false);
   const [stats, setStats] = useState<{ averageRating: number; topGenres: string[] }>({ averageRating: 0, topGenres: [] });
-  const [error, setError] = useState<string>("");
   const [toastMessage, setToastMessage] = useState<string>("");
   const [focusedIndex, setFocusedIndex] = useState<number>(-1);
   const [showBackToTop, setShowBackToTop] = useState(false);
   const [themeColor, setThemeColor] = useState<string>("");
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [showQuiz, setShowQuiz] = useState(false);
+  const [quizActive, setQuizActive] = useState(false);
   const [quizStep, setQuizStep] = useState(0);
   const [quizAnswers, setQuizAnswers] = useState<string[]>([]);
   const [virtualScroll, setVirtualScroll] = useState(false);
   const [scrollTop, setScrollTop] = useState(0);
+  const containerHeight = 600;
+  const itemHeight = 320;
   // Filtered movies based on advanced filters
   const filteredMovies = movies.filter(movie => {
     // Genre filter
@@ -164,6 +166,7 @@ function MoodContent() {
     moodTrends: [] as { date: string; mood: string }[],
   });
   const [showAnalytics, setShowAnalytics] = useState(false);
+  const [suggestedMood, setSuggestedMood] = useState<string | null>(null);
 
   useEffect(() => {
     if (!activeMood) return;
@@ -284,7 +287,6 @@ function MoodContent() {
 
   async function fetchMoodMovies(slug: string, p: number, sort?: string, append = false) {
     setLoading(true);
-    setError("");
     setError(null);
     try {
       const data = await moviesAPI.getMoodMovies(slug, p, sort || sortBy);
@@ -296,10 +298,13 @@ function MoodContent() {
       setPage(p);
 
       const averageRating = nextMovies.length
-        ? nextMovies.reduce((sum, movie) => sum + movie.vote_average, 0) / nextMovies.length
+        ? nextMovies.reduce(
+            (sum: number, movie: MovieCompact) => sum + movie.vote_average,
+            0
+          ) / nextMovies.length
         : 0;
       const genreCounts: Record<string, number> = {};
-      nextMovies.forEach((movie) => {
+      nextMovies.forEach((movie: MovieCompact) => {
         movie.genres?.forEach((genre) => {
           genreCounts[genre.name] = (genreCounts[genre.name] || 0) + 1;
         });
@@ -312,13 +317,14 @@ function MoodContent() {
 
       // Enable virtual scroll for large result sets
       setVirtualScroll(nextMovies.length > 100);
-    } catch (err) {
+    } catch (err: unknown) {
       console.error(err);
-      setError("Failed to load movies. Please try again.");
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    } catch (err: any) {
-      console.error(err);
-      setError(err.message || 'Failed to fetch movies matching this mood. Please try again.');
+      const message =
+        err instanceof Error
+          ? err.message
+          : "Failed to load movies. Please try again.";
+      setError(message);
+      window.scrollTo({ top: 0, behavior: "smooth" });
     } finally {
       setLoading(false);
     }
@@ -461,9 +467,10 @@ function MoodContent() {
           Take Quiz
         </button>
         <button
+          type="button"
           onClick={() => {
-            const suggestedMood = getSuggestedMoodByTime();
-            setActiveMood(suggestedMood);
+            const slug = getSuggestedMoodByTime();
+            router.push(`/mood?mood=${slug}`);
           }}
           className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-white/10 hover:bg-white/20 border border-white/20 text-white font-semibold transition-all duration-200 hover:scale-105 ml-4"
           aria-label="Get a mood suggestion based on the current time of day"
@@ -492,14 +499,15 @@ function MoodContent() {
           return (
             <button
               key={mood.slug}
-              onClick={() => { if (!isActive) router.push(`/mood?mood=${mood.slug}`) }}
-              className={`genre-card glass-card group relative overflow-hidden rounded-xl p-5 text-center transition-all duration-300 ${
+              type="button"
               tabIndex={0}
-              onFocus={() => setFocusedIndex(MOODS.findIndex(m => m.slug === mood.slug))}
+              onFocus={() => setFocusedIndex(MOODS.findIndex((m) => m.slug === mood.slug))}
               onClick={() => {
-                setToastMessage(`Selected ${mood.label}`);
-                setTimeout(() => setToastMessage(""), 2000);
-                router.push(`/mood?mood=${mood.slug}`);
+                if (!isActive) {
+                  setToastMessage(`Selected ${mood.label}`);
+                  setTimeout(() => setToastMessage(""), 2000);
+                  router.push(`/mood?mood=${mood.slug}`);
+                }
               }}
               className={`genre-card glass-card group relative overflow-hidden rounded-xl p-5 text-center transition-all duration-300 hover:scale-105 focus:outline-none focus:ring-2 focus:ring-gold/50 ${
                 isActive ? "ring-2 ring-gold/40 scale-[1.03]" : ""
@@ -723,15 +731,24 @@ function MoodContent() {
             <div className="flex flex-col gap-5 mb-8">
               <div className="flex items-start justify-between gap-6 flex-wrap">
                 <div>
-                  <h2 className="text-2xl font-bold font-display">{moodInfo.label}</h2>
+                  <div className="flex items-center gap-3 flex-wrap">
+                    <h2 className="text-2xl font-bold font-display">{moodInfo.label}</h2>
+                    <button
+                      type="button"
+                      onClick={() => router.push("/mood")}
+                      className="text-xs px-3 py-1.5 rounded-lg border border-white/10 hover:bg-white/5 transition-colors text-white/40"
+                    >
+                      Clear
+                    </button>
+                  </div>
                   <p className="text-sm text-white/30 mt-0.5">{moodInfo.description}</p>
-                </div>
-                <div className="flex items-center gap-4">
                   {totalResults > 0 && (
-                    <div className="text-sm text-white/50">
-                      {totalResults.toLocaleString()} movies
-                    </div>
+                    <span className="inline-block mt-2 text-[11px] px-2 py-1 bg-white/5 rounded-md text-white/40">
+                      {totalResults.toLocaleString()} titles found
+                    </span>
                   )}
+                </div>
+                <div className="flex items-center gap-4 flex-wrap">
                   <button
                     onClick={() => {
                       const newFavorites = favorites.includes(activeMood)
@@ -784,14 +801,6 @@ function MoodContent() {
                     Infinite scroll
                   </label>
                 </div>
-            <div className="flex items-center justify-between mb-8">
-              <div>
-                <div className="flex items-center gap-4">
-                  <h2 className="text-2xl font-bold font-display">{moodInfo.label}</h2>
-                  <button onClick={() => router.push('/mood')} className="text-xs px-3 py-1.5 rounded-lg border border-white/10 hover:bg-white/5 transition-colors text-white/40">Clear</button>
-                </div>
-                <p className="text-sm text-white/30 mt-0.5">{moodInfo.description}</p>
-                {totalResults > 0 && <span className="inline-block mt-2 text-[11px] px-2 py-1 bg-white/5 rounded-md text-white/40">{totalResults} titles found</span>}
               </div>
 
               {stats.averageRating > 0 && (
@@ -837,27 +846,12 @@ function MoodContent() {
               </button>
             </div>
           ) : loading ? (
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-5">
-              {renderSkeletons()}
-          {loading ? (
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-5 relative">
               <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent animate-pulse" />
               {Array.from({ length: 18 }).map((_, i) => (
                 <MovieCardSkeleton key={i} />
               ))}
             </div>
-          ) : error ? (
-            <div className="text-center py-10">
-              <p className="text-red-400 mb-4">{error}</p>
-              <button
-                onClick={() => fetchMoodMovies(activeMood, page)}
-                className="px-6 py-2 bg-red-500/20 hover:bg-red-500/30 text-red-400 rounded-lg transition-colors"
-              >
-                Retry
-              </button>
-            </div>
-          ) : (
-            <>
           ) : (
             <>
               {virtualScroll ? (
@@ -902,18 +896,18 @@ function MoodContent() {
               {totalPages > 1 && !infiniteScroll && (
                 <div className="flex items-center justify-center gap-3 mt-12">
                   <button
+                    type="button"
                     onClick={() => fetchMoodMovies(activeMood, page - 1)}
                     disabled={page <= 1}
-                    className="px-5 py-2.5 rounded-xl glass-card text-sm font-medium disabled:opacity-20 hover:bg-white/5 transition-all active:scale-95"
                     className="px-5 py-2.5 rounded-xl glass-card text-sm font-medium disabled:opacity-30 disabled:cursor-not-allowed hover:bg-white/10 transition-colors disabled:hover:bg-transparent"
                   >
                     Previous
                   </button>
                   <span className="text-sm text-white/30 font-mono px-4">{page} / {Math.min(totalPages, 500)}</span>
                   <button
+                    type="button"
                     onClick={() => fetchMoodMovies(activeMood, page + 1)}
                     disabled={page >= totalPages}
-                    className="px-5 py-2.5 rounded-xl glass-card text-sm font-medium disabled:opacity-20 hover:bg-white/5 transition-all active:scale-95"
                     className="px-5 py-2.5 rounded-xl glass-card text-sm font-medium disabled:opacity-30 disabled:cursor-not-allowed hover:bg-white/10 transition-colors disabled:hover:bg-transparent"
                   >
                     Next
@@ -923,6 +917,7 @@ function MoodContent() {
               {totalPages > 1 && infiniteScroll && (
                 <div className="flex justify-center mt-12">
                   <button
+                    type="button"
                     onClick={() => fetchMoodMovies(activeMood, page + 1, sortBy, true)}
                     disabled={page >= totalPages}
                     className="px-6 py-3 rounded-xl glass-card text-sm font-medium disabled:opacity-30 disabled:cursor-not-allowed hover:bg-white/10 transition-colors disabled:hover:bg-transparent"
@@ -1049,14 +1044,17 @@ function MoodContent() {
                     onClick={() => {
                       if (quizAnswers[quizStep]) {
                         // Calculate recommended mood based on answers
-                        const moodCounts = quizAnswers.reduce((acc, mood) => {
-                          acc[mood] = (acc[mood] || 0) + 1;
-                          return acc;
-                        }, {});
+                        const moodCounts = quizAnswers.reduce<Record<string, number>>(
+                          (acc, mood) => {
+                            acc[mood] = (acc[mood] || 0) + 1;
+                            return acc;
+                          },
+                          {}
+                        );
                         const recommendedMood = Object.entries(moodCounts).reduce((a, b) =>
                           moodCounts[a[0]] > moodCounts[b[0]] ? a : b
                         )[0];
-                        setActiveMood(recommendedMood);
+                        router.push(`/mood?mood=${recommendedMood}`);
                         setShowQuiz(false);
                         setQuizStep(0);
                         setQuizAnswers([]);

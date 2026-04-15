@@ -154,8 +154,10 @@ export const moviesAPI = {
 
   getMoods: () => apiFetch<any[]>("/movies/moods/"),
 
-  getMoodMovies: (slug: string, page = 1) =>
-    apiFetch<any>(`/movies/moods/${slug}/?page=${page}`),
+  getMoodMovies: (slug: string, page = 1, sort = "popularity.desc") =>
+    apiFetch<any>(
+      `/movies/moods/${slug}/?page=${page}&sort=${encodeURIComponent(sort)}`
+    ),
 
   discover: (params: Record<string, string | number>) => {
     const qs = new URLSearchParams();

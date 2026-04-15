@@ -27,8 +27,7 @@ function GenreContent() {
     ? sortParam
     : "popularity.desc";
 
-  // Ensure accurate pagination boundaries
-  const initialPage = Math.max(1, Number.parseInt(searchParams.get("page") || "1", 10) || 1);
+  const page = Math.max(1, Number.parseInt(searchParams.get("page") || "1", 10) || 1);
 
   const [movies, setMovies] = useState<MovieCompact[]>([]);
   const [loading, setLoading] = useState(true);
@@ -58,32 +57,40 @@ function GenreContent() {
   };
 
   useEffect(() => {
-    async function fetchMovies() {
+    let cancelled = false;
+    async function load() {
       setLoading(true);
       setLoadError(false);
       try {
         const data = await genresAPI.getMovies(slug, page, sort);
-        setMovies(data.results || []);
-        setTotalPages(data.total_pages || 1);
+        if (!cancelled) {
+          setMovies(data.results || []);
+          setTotalPages(data.total_pages || 1);
+        }
       } catch (err) {
         console.error(err);
-        setLoadError(true);
-        setMovies([]);
-        setTotalPages(1);
+        if (!cancelled) {
+          setLoadError(true);
+          setMovies([]);
+          setTotalPages(1);
+        }
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     }
-    fetchMovies();
+    load();
+    return () => {
+      cancelled = true;
+    };
   }, [slug, page, sort]);
 
   return (
-    <div className="pt-24 pb-20 px-6 md:px-12 lg:px-20 max-w-[1400px] mx-auto">
+    <main className="pt-24 pb-20 px-6 md:px-12 lg:px-20 max-w-[1400px] mx-auto">
       <Link
         href="/genre"
         className="inline-flex items-center gap-2 text-sm text-white/40 hover:text-white/70 mb-6"
       >
-        <ArrowLeft className="w-4 h-4" /> All Genres
+        <ArrowLeft className="w-4 h-4" aria-hidden /> All Genres
       </Link>
 
       <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-5 mb-8">
@@ -140,6 +147,11 @@ function GenreContent() {
             <MovieCardSkeleton key={i} />
           ))}
         </div>
+      ) : loadError ? null : movies.length === 0 ? (
+        <div className="text-center py-16 rounded-2xl border border-white/[0.06] bg-white/[0.02]">
+          <p className="text-white/40 mb-2">No movies found for this genre yet.</p>
+          <p className="text-sm text-white/25">Try another sort or sync more data from the backend.</p>
+        </div>
       ) : (
         <>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6">
@@ -171,7 +183,7 @@ function GenreContent() {
           )}
         </>
       )}
-    </div>
+    </main>
   );
 }
 
