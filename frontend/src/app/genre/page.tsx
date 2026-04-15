@@ -24,7 +24,7 @@ export default function GenresPage() {
               /* ignore */
             }
           }}
-          className="inline-flex items-center gap-2 h-10 px-4 rounded-xl glass-card text-xs font-medium text-white/70 hover:text-white self-start"
+          className="inline-flex items-center gap-2 h-10 px-4 rounded-xl glass-card text-xs font-medium text-white/70 hover:text-white self-start transition-all duration-300 hover:border-gold/30 hover:shadow-[0_0_15px_rgba(255,215,0,0.15)] active:scale-95"
         >
           {copied ? (
             <Check className="w-3.5 h-3.5 text-emerald-400" />
