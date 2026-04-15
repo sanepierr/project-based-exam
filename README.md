@@ -56,6 +56,8 @@ The frontend uses `NEXT_PUBLIC_API_URL` (e.g. `http://localhost:8000/api`) so th
 - Add **`NEXT_PUBLIC_API_URL`** to your production (and preview, if needed) environment, pointing at your deployed API (for example `https://your-api.example.com/api`).
 - On the Django side, add your Vercel app origin(s) to **`CORS_ORIGINS`** (production URL and preview URLs if the browser calls the API from those hosts).
 
+**If the site loads but shows no movies:** `NEXT_PUBLIC_*` variables are inlined at **build** time. If they were missing when Vercel built the app, the client bundle still points at `http://localhost:8000/api` (or had `undefined` in raw `fetch` URLs). Set **`NEXT_PUBLIC_API_URL`** in the Vercel project to your live API (must include the `/api` prefix if that is how your Django URLs are mounted), then trigger a **new deployment** so Next rebuilds. In the browser devtools **Network** tab, failed calls to `localhost` or **CORS** errors to your Render URL both indicate config, not “frontend-only mode.” A **cold Render** service can delay the first response (often 30–60s); wait and retry once the API wakes up.
+
 ## Deployment (backend)
 
 The repo includes a [`Procfile`](./Procfile) (release migrations + `gunicorn`) and [`build.sh`](./build.sh) to install Python dependencies and run `collectstatic`. On your host, set the same variables as in `.env.example`, especially `DATABASE_URL`, `DJANGO_SECRET_KEY`, `ALLOWED_HOSTS`, and `CORS_ORIGINS` pointing at your deployed frontend URL.
