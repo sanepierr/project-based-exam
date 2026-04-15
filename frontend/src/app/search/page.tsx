@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, Suspense } from "react";
+import { useState, useEffect, useRef, useCallback, Suspense } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Search, SlidersHorizontal, X, Loader2, ChevronDown } from "lucide-react";
 import MovieCard, { MovieCardSkeleton } from "@/components/MovieCard";
@@ -111,30 +111,7 @@ function SearchContent() {
     router.replace(`${pathname}?${params.toString()}`);
   }
 
-  useEffect(() => {
-    if (initialQuery) {
-      performSearch(initialQuery, 1);
-    } else if (sortParam) {
-      loadCategory(sortParam, 1);
-    } else {
-      loadCategory("trending", 1);
-    }
-  }, [initialQuery, sortParam]);
-
-  useEffect(() => {
-    setQuery(initialQuery);
-  }, [initialQuery]);
-
-  // Live debounced search — fires 300ms after user stops typing in the main bar
-  useEffect(() => {
-    if (!query.trim() || query === initialQuery) return;
-    const timer = setTimeout(() => {
-      performSearch(query, 1);
-    }, 300);
-    return () => clearTimeout(timer);
-  }, [query]);
-
-  async function performSearch(q: string, p: number) {
+  const performSearch = useCallback(async (q: string, p: number) => {
     if (!q.trim()) return;
     const requestId = startRequest();
     setLoading(true);
@@ -153,9 +130,9 @@ function SearchContent() {
         setLoading(false);
       }
     }
-  }
+  }, []);
 
-  async function loadCategory(cat: string, p: number) {
+  const loadCategory = useCallback(async (cat: string, p: number) => {
     const requestId = startRequest();
     setLoading(true);
     try {
@@ -178,7 +155,30 @@ function SearchContent() {
         setLoading(false);
       }
     }
-  }
+  }, []);
+
+  useEffect(() => {
+    if (initialQuery) {
+      performSearch(initialQuery, 1);
+    } else if (sortParam) {
+      loadCategory(sortParam, 1);
+    } else {
+      loadCategory("trending", 1);
+    }
+  }, [initialQuery, sortParam, performSearch, loadCategory]);
+
+  useEffect(() => {
+    setQuery(initialQuery);
+  }, [initialQuery]);
+
+  // Live debounced search — fires 300ms after user stops typing in the main bar
+  useEffect(() => {
+    if (!query.trim() || query === initialQuery) return;
+    const timer = setTimeout(() => {
+      performSearch(query, 1);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [query, initialQuery, performSearch]);
 
   async function applyFilters(p: number = 1) {
     function buildDiscoverParams(pageNumber: number) {
