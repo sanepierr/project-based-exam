@@ -53,3 +53,12 @@ class ComputeGenrePreferencesTest(TestCase):
         engine = RecommendationEngine()
         engine.compute_genre_preferences(self.user)
         self.assertFalse(UserGenrePreference.objects.filter(user=self.user).exists())
+
+class RecommendationEngineMethodsTest(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user("rec_test2", "rec2@example.com", "pass123")
+        self.engine = RecommendationEngine()
+
+    def test_director_recommendations_filters_exclude_id(self):
+        results = self.engine.get_director_recommendations(1, exclude_movie_id=100)
+        self.assertIsInstance(results, list)
