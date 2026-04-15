@@ -41,6 +41,17 @@ const GENRE_LIST = [
   { id: 10751, name: "Family" }, { id: 9648, name: "Mystery" }, { id: 37, name: "Western" },
 ];
 
+const FILTER_DEFAULTS = {
+  genre: "",
+  yearFrom: "",
+  yearTo: "",
+  rating: "",
+  runtimeMin: "",
+  runtimeMax: "",
+  language: "",
+  sort: "popularity.desc",
+};
+
 function SearchContent() {
   const router = useRouter();
   const pathname = usePathname();
@@ -205,14 +216,14 @@ function SearchContent() {
   }
 
   function clearFilters() {
-    setFilterGenre("");
-    setFilterYearFrom("");
-    setFilterYearTo("");
-    setFilterRating("");
-    setFilterRuntimeMin("");
-    setFilterRuntimeMax("");
-    setFilterLanguage("");
-    setFilterSort("popularity.desc");
+    setFilterGenre(FILTER_DEFAULTS.genre);
+    setFilterYearFrom(FILTER_DEFAULTS.yearFrom);
+    setFilterYearTo(FILTER_DEFAULTS.yearTo);
+    setFilterRating(FILTER_DEFAULTS.rating);
+    setFilterRuntimeMin(FILTER_DEFAULTS.runtimeMin);
+    setFilterRuntimeMax(FILTER_DEFAULTS.runtimeMax);
+    setFilterLanguage(FILTER_DEFAULTS.language);
+    setFilterSort(FILTER_DEFAULTS.sort);
     setFiltersOpen(false);
     if (initialQuery) {
       performSearch(initialQuery, 1);
