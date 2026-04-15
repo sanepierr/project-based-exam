@@ -121,7 +121,7 @@ export default function DirectorPage() {
                 unoptimized
               />
             ) : (
-              <div className="w-full h-full flex items-center justify-center text-4xl text-white/20">
+              <div className="w-full h-full flex items-center justify-center text-4xl text-white/20" aria-label={`${person.name} placeholder`}>
                 {person.name?.[0]}
               </div>
             )}
