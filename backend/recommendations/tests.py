@@ -48,3 +48,8 @@ class ComputeGenrePreferencesTest(TestCase):
         pref = UserGenrePreference.objects.get(user=self.user, genre_tmdb_id=80)
         self.assertGreater(pref.weight, 0)
         self.assertGreaterEqual(pref.interaction_count, 1)
+
+    def test_no_interactions_yields_no_preferences(self):
+        engine = RecommendationEngine()
+        engine.compute_genre_preferences(self.user)
+        self.assertFalse(UserGenrePreference.objects.filter(user=self.user).exists())
