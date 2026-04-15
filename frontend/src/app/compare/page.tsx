@@ -327,7 +327,10 @@ function CompareContent() {
         <div className="glass-card rounded-2xl p-6 md:p-8 animate-slide-up">
           <div className="h-px bg-gradient-to-r from-transparent via-gold/15 to-transparent mb-6" />
 
-          <h2 className="text-xl font-bold font-display text-center mb-6">Head to Head</h2>
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+            <h2 className="text-xl font-bold font-display text-center sm:text-left flex-1">
+              Head to Head
+            </h2>
             <button
               type="button"
               onClick={async () => {
