@@ -117,6 +117,7 @@ function MoodContent() {
 
   useEffect(() => {
     if (!activeMood) return;
+    setIsTransitioning(true);
     fetchMoodMovies(activeMood, 1);
     setHistory((currentHistory) => {
       const newHistory = [activeMood, ...currentHistory.filter(h => h !== activeMood)].slice(0, 5);
@@ -125,6 +126,7 @@ function MoodContent() {
     });
     const recommendedSlugs = MOOD_RECOMMENDATIONS[activeMood] || [];
     setRecommended(MOODS.filter((m) => recommendedSlugs.includes(m.slug)));
+    setTimeout(() => setIsTransitioning(false), 300);
   }, [activeMood]);
 
   useEffect(() => {
@@ -231,7 +233,7 @@ function MoodContent() {
   }
 
   return (
-    <div className={`pt-24 pb-20 px-6 md:px-10 lg:px-20 max-w-[1440px] mx-auto transition-all duration-500 ${themeColor ? `bg-gradient-to-br ${themeColor}` : ""}`}>
+    <div className={`pt-24 pb-20 px-6 md:px-10 lg:px-20 max-w-[1440px] mx-auto transition-all duration-500 ${themeColor ? `bg-gradient-to-br ${themeColor}` : ""} ${isTransitioning ? "opacity-50 scale-95" : "opacity-100 scale-100"}`}>
       {/* Toast */}
       {toastMessage && (
         <div
@@ -388,7 +390,7 @@ function MoodContent() {
 
       {/* Results */}
       {activeMood && (
-        <div>
+        <div className={`transition-all duration-500 ${isTransitioning ? "opacity-0 translate-y-4" : "opacity-100 translate-y-0"}`}>
           {moodInfo && (
             <div className="flex flex-col gap-5 mb-8">
               <div className="flex items-start justify-between gap-6 flex-wrap">
