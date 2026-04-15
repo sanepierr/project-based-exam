@@ -262,6 +262,12 @@ function CompareContent() {
         </p>
       </div>
 
+      {badParams && (
+        <div className="mb-8 max-w-xl mx-auto rounded-xl border border-amber-500/25 bg-amber-500/10 px-4 py-3 text-sm text-amber-100/90 text-center">
+          Invalid movie IDs in the URL. Use positive TMDB numeric IDs for both <code className="text-white/80">a</code> and{" "}
+          <code className="text-white/80">b</code>.
+        </div>
+      )}
       {/* Movie Selectors */}
       <div className="flex items-start gap-6 mb-12">
         <MovieSelector
