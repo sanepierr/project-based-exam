@@ -1,100 +1,84 @@
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import { jest } from '@jest/globals';
-import MoodPage from './page';
-import { moviesAPI } from '@/lib/api';
+import "@testing-library/jest-dom";
+import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import mockRouter from "next-router-mock";
+import MoodPage from "./page";
+import { moviesAPI } from "@/lib/api";
 
-// Mock the API
-jest.mock('@/lib/api', () => ({
+jest.mock("@/lib/api", () => ({
   moviesAPI: {
     getMoodMovies: jest.fn(),
   },
 }));
 
-// Mock Next.js router
-const mockPush = jest.fn();
-jest.mock('next/navigation', () => ({
-  useSearchParams: () => new URLSearchParams(),
-  useRouter: () => ({ push: mockPush }),
-}));
-
-describe('MoodPage', () => {
+describe("MoodPage", () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    mockRouter.push("/mood");
   });
 
-  test('renders mood picker header', () => {
+  test("renders mood picker header", () => {
     render(<MoodPage />);
-    expect(screen.getByText("What's your mood?")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent(
+      /what's your.*mood/i
+    );
   });
 
-  test('renders all mood options', () => {
+  test("renders all mood options", () => {
     render(<MoodPage />);
-    expect(screen.getByText('Cozy Night In')).toBeInTheDocument();
-    expect(screen.getByText('Adrenaline Rush')).toBeInTheDocument();
-    expect(screen.getByText('Feel Good')).toBeInTheDocument();
+    expect(screen.getByText("Cozy Night In")).toBeInTheDocument();
+    expect(screen.getByText("Adrenaline Rush")).toBeInTheDocument();
+    expect(screen.getByText("Feel Good")).toBeInTheDocument();
   });
 
-  test('shows surprise me button', () => {
+  test("shows surprise me button", () => {
     render(<MoodPage />);
-    expect(screen.getByText('Surprise Me')).toBeInTheDocument();
+    expect(screen.getByText("Surprise Me")).toBeInTheDocument();
   });
 
-  test('shows take quiz button', () => {
+  test("shows take quiz button", () => {
     render(<MoodPage />);
-    expect(screen.getByText('Take Mood Quiz')).toBeInTheDocument();
+    expect(screen.getByText("Take Mood Quiz")).toBeInTheDocument();
   });
 
-  test('opens quiz modal when quiz button clicked', () => {
+  test("opens quiz modal when quiz button clicked", () => {
     render(<MoodPage />);
-    const quizButton = screen.getByText('Take Mood Quiz');
-    fireEvent.click(quizButton);
-    expect(screen.getByText('Mood Quiz')).toBeInTheDocument();
+    fireEvent.click(screen.getByText("Take Mood Quiz"));
+    expect(screen.getByText("Mood Quiz")).toBeInTheDocument();
   });
 
-  test('quiz progresses through questions', () => {
+  test("quiz progresses through questions", () => {
     render(<MoodPage />);
-    const quizButton = screen.getByText('Take Mood Quiz');
-    fireEvent.click(quizButton);
+    fireEvent.click(screen.getByText("Take Mood Quiz"));
 
-    // First question
-    expect(screen.getByText('How are you feeling right now?')).toBeInTheDocument();
-
-    // Answer first question
-    const firstOption = screen.getByText('Happy & energetic');
-    fireEvent.click(firstOption);
-
-    // Should show second question
-    expect(screen.getByText('What kind of movie experience do you want?')).toBeInTheDocument();
+    expect(screen.getByText("How are you feeling right now?")).toBeInTheDocument();
+    fireEvent.click(screen.getByText("Happy & energetic"));
+    expect(screen.getByText("What kind of movie experience do you want?")).toBeInTheDocument();
   });
 
-  test('quiz completes and navigates to mood', async () => {
-    (moviesAPI.getMoodMovies as jest.Mock).mockResolvedValue({
+  test("quiz completes and navigates to mood", async () => {
+    jest.mocked(moviesAPI.getMoodMovies).mockResolvedValue({
       results: [],
-      mood: { label: 'Feel Good', description: 'Test' },
+      mood: { label: "Feel Good", description: "Test" },
       total_pages: 1,
       total_results: 0,
     });
 
     render(<MoodPage />);
-    const quizButton = screen.getByText('Take Mood Quiz');
-    fireEvent.click(quizButton);
-
-    // Answer all questions quickly
-    const options = screen.getAllByRole('button').filter(btn =>
-      ['Happy & energetic', 'Light-hearted comedy', 'Short & sweet (under 2 hours)'].includes(btn.textContent || '')
-    );
-
-    options.forEach(option => fireEvent.click(option));
+    fireEvent.click(screen.getByText("Take Mood Quiz"));
+    fireEvent.click(screen.getByText("Happy & energetic"));
+    fireEvent.click(screen.getByText("Light-hearted comedy"));
+    fireEvent.click(screen.getByText("Short & sweet (under 2 hours)"));
 
     await waitFor(() => {
-      expect(mockPush).toHaveBeenCalledWith('/mood?mood=feel-good');
+      expect(mockRouter.asPath).toMatch(/mood=feel-good/);
     });
   });
 
-  test('mood selection navigates correctly', () => {
+  test("mood selection navigates correctly", async () => {
     render(<MoodPage />);
-    const moodButton = screen.getByText('Cozy Night In');
-    fireEvent.click(moodButton);
-    expect(mockPush).toHaveBeenCalledWith('/mood?mood=cozy-night');
+    fireEvent.click(screen.getByText("Cozy Night In"));
+    await waitFor(() => {
+      expect(mockRouter.asPath).toMatch(/mood=cozy-night/);
+    });
   });
 });
