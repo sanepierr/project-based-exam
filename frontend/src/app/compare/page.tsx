@@ -75,6 +75,15 @@ function CompareContent() {
       cancelled = true;
     };
   }, [searchParams, replaceCompareUrl]);
+
+  useEffect(() => {
+    if (!movieA || !movieB) return;
+    const idA = movieA.tmdb_id ?? movieA.id;
+    const idB = movieB.tmdb_id ?? movieB.id;
+    if (!idA || !idB) return;
+    router.replace(`/compare?a=${idA}&b=${idB}`, { scroll: false });
+  }, [movieA, movieB, router]);
+
   async function searchMovies(query: string, side: "A" | "B") {
     if (query.length < 2) {
       side === "A" ? setResultsA([]) : setResultsB([]);
