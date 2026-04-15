@@ -153,6 +153,7 @@ export default function PersonalizedSection({ movies }: PersonalizedSectionProps
                         fill
                         className="object-cover"
                         unoptimized
+                        priority={i < 2}
                       />
                       {/* Rating overlay */}
                       <div className="absolute bottom-0 left-0 right-0 p-2 bg-gradient-to-t from-black/80 to-transparent">
