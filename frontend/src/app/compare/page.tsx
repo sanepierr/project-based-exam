@@ -320,7 +320,10 @@ function CompareContent() {
           results={resultsB}
           searching={searchingB}
           movie={movieB}
-          clear={() => setMovieB(null)}
+          clear={() => {
+            setMovieB(null);
+            replaceCompareUrl(movieA, null);
+          }}
         />
       </div>
 
