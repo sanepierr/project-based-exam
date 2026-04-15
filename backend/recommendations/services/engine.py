@@ -5,6 +5,8 @@ from movies.services.tmdb_service import TMDBService
 
 logger = logging.getLogger(__name__)
 
+MIN_VOTE_COUNT = 100
+
 # Interaction weights
 INTERACTION_WEIGHTS = {
     "like": 5.0,
@@ -95,7 +97,7 @@ class RecommendationEngine:
                 with_genres=genre_id,
                 sort_by="vote_average.desc",
                 page=page,
-                **{"vote_count.gte": 100},
+                **{"vote_count.gte": MIN_VOTE_COUNT},
             )
             movies = data.get("results", [])
             for m in movies:
