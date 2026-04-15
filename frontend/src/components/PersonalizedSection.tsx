@@ -68,11 +68,11 @@ export default function PersonalizedSection({ movies }: PersonalizedSectionProps
         <div className="relative z-10 flex flex-col lg:flex-row gap-10 items-center">
           {/* Text content */}
           <div className="flex-1 space-y-6">
-            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-gold/10 border border-gold/15">
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-gold/10 border border-gold/15" aria-live="polite" aria-busy={pLoading}>
               {pLoading && isAuthenticated ? (
-                <Loader2 className="w-3.5 h-3.5 text-gold animate-spin" aria-hidden />
+                <Loader2 className="w-3.5 h-3.5 text-gold animate-spin" aria-hidden="true" />
               ) : (
-                <Sparkles className="w-3.5 h-3.5 text-gold" />
+                <Sparkles className="w-3.5 h-3.5 text-gold" aria-hidden="true" />
               )}
               <span className="text-[11px] font-semibold uppercase tracking-widest text-gold">
                 {usingPersonalized ? "Picked for you" : "Personalized For You"}
