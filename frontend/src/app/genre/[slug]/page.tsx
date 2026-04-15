@@ -128,7 +128,7 @@ function GenreContent() {
       </div>
 
       {loadError && (
-        <div className="mb-8 rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-100/90">
+        <div className="mb-8 rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-100/90 glass-card backdrop-blur-md shadow-lg">
           Could not load movies for this genre. Check your connection or try another sort.
         </div>
       )}
