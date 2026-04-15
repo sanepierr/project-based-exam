@@ -11,7 +11,8 @@ import {
 } from "lucide-react";
 import MovieCarousel from "@/components/MovieCarousel";
 import MovieCard from "@/components/MovieCard";
-import { moviesAPI } from "@/lib/api";
+import { moviesAPI, recommendationsAPI } from "@/lib/api";
+import { useAuth } from "@/lib/AuthContext";
 import {
   posterUrl, backdropUrl, formatRuntime, formatCurrency,
   formatDate, ratingColor,
@@ -49,6 +50,7 @@ function saveWatchlist(movies: any[]) {
 export default function MovieDetailPage() {
   const params = useParams();
   const tmdbId = Number(params.id);
+  const { isAuthenticated } = useAuth();
 
   const [movie, setMovie] = useState<any>(null);
   const [recommendations, setRecommendations] = useState<MovieCompact[]>([]);
@@ -83,6 +85,17 @@ export default function MovieDetailPage() {
       try {
         const data = await moviesAPI.getDetail(tmdbId);
         setMovie(data);
+
+        if (isAuthenticated) {
+          recommendationsAPI
+            .trackInteraction({
+              movie_tmdb_id: tmdbId,
+              movie_title: data?.title || "",
+              interaction_type: "view",
+              genre_ids: (data?.genres || []).map((g: any) => g.id),
+            })
+            .catch(() => {});
+        }
         const recData = await fetch(
           `${process.env.NEXT_PUBLIC_API_URL}/movies/tmdb/${tmdbId}/`
         ).then(r => r.json());
@@ -103,7 +116,7 @@ export default function MovieDetailPage() {
       }
     }
     fetchAll();
-  }, [tmdbId]);
+  }, [tmdbId, isAuthenticated]);
 
   // Fetch recommendations based on locally liked movies
   async function fetchLikedRecommendations() {
@@ -124,17 +137,31 @@ export default function MovieDetailPage() {
   }
 
   // Like / Dislike / Bookmark handlers
+  const trackToBackend = useCallback(
+    (interactionType: string) => {
+      if (!isAuthenticated) return;
+      const genreIds = (movie?.genres || []).map((g: any) => g.id);
+      recommendationsAPI
+        .trackInteraction({
+          movie_tmdb_id: tmdbId,
+          movie_title: movie?.title || "",
+          interaction_type: interactionType,
+          genre_ids: genreIds,
+        })
+        .catch(() => {});
+    },
+    [isAuthenticated, tmdbId, movie]
+  );
+
   const handleLike = useCallback(() => {
     const liked = getLikedMovies();
     const filtered = liked.filter((m: any) => m.id !== tmdbId);
 
     if (isLiked) {
-      // Unlike
       saveLikedMovies(filtered);
       setIsLiked(false);
       setLikeCount((c) => c - 1);
     } else {
-      // Like
       filtered.push({
         id: tmdbId,
         title: movie?.title || "",
@@ -147,8 +174,9 @@ export default function MovieDetailPage() {
       setIsLiked(true);
       setIsDisliked(false);
       setLikeCount((c) => c + 1);
+      trackToBackend("like");
     }
-  }, [tmdbId, isLiked, movie]);
+  }, [tmdbId, isLiked, movie, trackToBackend]);
 
   const handleDislike = useCallback(() => {
     const liked = getLikedMovies();
@@ -169,8 +197,9 @@ export default function MovieDetailPage() {
       saveLikedMovies(filtered);
       setIsDisliked(true);
       setIsLiked(false);
+      trackToBackend("dislike");
     }
-  }, [tmdbId, isDisliked, movie]);
+  }, [tmdbId, isDisliked, movie, trackToBackend]);
 
   const handleBookmark = useCallback(() => {
     const watchlist = getWatchlist();
@@ -187,8 +216,18 @@ export default function MovieDetailPage() {
       });
       saveWatchlist(watchlist);
       setIsBookmarked(true);
+      trackToBackend("watchlist");
+      if (isAuthenticated) {
+        recommendationsAPI
+          .addToWatchlist({
+            movie_tmdb_id: tmdbId,
+            movie_title: movie?.title || "",
+            poster_path: movie?.poster_path || "",
+          })
+          .catch(() => {});
+      }
     }
-  }, [tmdbId, isBookmarked, movie]);
+  }, [tmdbId, isBookmarked, movie, trackToBackend, isAuthenticated]);
 
   // Loading state
   if (loading) {
