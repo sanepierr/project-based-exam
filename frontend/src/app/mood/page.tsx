@@ -95,6 +95,9 @@ function MoodContent() {
   const [totalPages, setTotalPages] = useState(1);
   const [totalResults, setTotalResults] = useState(0);
   const [sortBy, setSortBy] = useState("popularity.desc");
+  const sortByRef = useRef(sortBy);
+  sortByRef.current = sortBy;
+
   const [favorites, setFavorites] = useState<string[]>([]);
   const [history, setHistory] = useState<string[]>([]);
   const [recommended, setRecommended] = useState<typeof MOODS>([]);
@@ -175,7 +178,7 @@ function MoodContent() {
       setLoading(true);
       setError(null);
       try {
-        const data = await moviesAPI.getMoodMovies(slug, p, sort || sortBy);
+        const data = await moviesAPI.getMoodMovies(slug, p, sort || sortByRef.current);
         const resolvedResults = data.results || [];
         let nextMovies: MovieCompact[] = [];
         setMovies((prev) => {
@@ -219,7 +222,7 @@ function MoodContent() {
         setLoading(false);
       }
     },
-    [sortBy]
+    []
   );
 
   useEffect(() => {
