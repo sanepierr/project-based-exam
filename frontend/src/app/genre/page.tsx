@@ -4,6 +4,7 @@ import { useState } from "react";
 import GenreGrid from "@/components/GenreGrid";
 import { Clapperboard, Link2, Check } from "lucide-react";
 
+// SEO Note: Add real NEXT meta templates here eventually for generic sharing
 export default function GenresPage() {
   const [copied, setCopied] = useState(false);
   return (
