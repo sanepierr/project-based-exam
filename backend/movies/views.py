@@ -1,4 +1,5 @@
 import logging
+import re
 from rest_framework import viewsets, status
 from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework.permissions import AllowAny
@@ -263,8 +264,6 @@ def describe_movies(request):
             {"error": "A description is required."},
             status=status.HTTP_400_BAD_REQUEST,
         )
-
-    import re
 
     # Maps trigger words/phrases in descriptions to additional TMDB keyword searches.
     # Bridges the gap between how people describe movies and how TMDB tags them.
