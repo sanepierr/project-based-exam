@@ -48,6 +48,8 @@ Copy the root [`.env.example`](./.env.example) to `backend/.env` and set values 
 
 The frontend uses `NEXT_PUBLIC_API_URL` (e.g. `http://localhost:8000/api`) so the browser calls the correct API base URL. See [`frontend/.env.example`](./frontend/.env.example) for a frontend-only template.
 
+**Curated collections:** the UI route [`/collections`](./frontend/src/app/collections/page.tsx) reads staff-defined lists from `GET /api/movies/collections/` and `GET /api/movies/collections/<slug>/` (see [`backend/movies/curated_collections.py`](./backend/movies/curated_collections.py)).
+
 ### Deploying the frontend (e.g. Vercel)
 
 - Set **Root Directory** to `frontend` (or equivalent in your host).
