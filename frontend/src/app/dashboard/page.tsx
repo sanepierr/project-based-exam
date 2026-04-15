@@ -3,8 +3,8 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import {
-  BarChart3, Heart, ThumbsDown, Eye, Bookmark, Star,
-  TrendingUp, Clock, LogIn, Sparkles, Film
+  BarChart3, Heart, ThumbsDown, Eye, Bookmark,
+  TrendingUp, Clock, LogIn, Sparkles, Film, Search, RefreshCw,
 } from "lucide-react";
 import { useAuth } from "@/lib/AuthContext";
 import { recommendationsAPI } from "@/lib/api";
@@ -13,6 +13,7 @@ export default function DashboardPage() {
   const { user, isAuthenticated, loading: authLoading } = useAuth();
   const [stats, setStats] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState(false);
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -23,11 +24,15 @@ export default function DashboardPage() {
   }, [isAuthenticated]);
 
   async function fetchDashboard() {
+    setFetchError(false);
+    setLoading(true);
     try {
       const data = await recommendationsAPI.getDashboard();
       setStats(data);
     } catch (err) {
       console.error("Dashboard error:", err);
+      setFetchError(true);
+      setStats(null);
     } finally {
       setLoading(false);
     }
@@ -62,12 +67,34 @@ export default function DashboardPage() {
       <div className="pt-24 pb-20 px-6 md:px-10 lg:px-20 max-w-[1440px] mx-auto">
         <div className="space-y-6">
           <div className="skeleton h-12 w-64 rounded-xl" />
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {Array.from({ length: 4 }).map((_, i) => (
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+            {Array.from({ length: 5 }).map((_, i) => (
               <div key={i} className="skeleton h-28 rounded-xl" />
             ))}
           </div>
           <div className="skeleton h-64 rounded-xl" />
+        </div>
+      </div>
+    );
+  }
+
+  if (fetchError) {
+    return (
+      <div className="pt-24 pb-20 px-6 md:px-10 lg:px-20 max-w-[1440px] mx-auto">
+        <div className="max-w-md mx-auto text-center py-16 glass-card rounded-2xl px-6">
+          <BarChart3 className="w-10 h-10 text-gold/30 mx-auto mb-4" />
+          <h1 className="text-xl font-bold font-display mb-2">Could not load dashboard</h1>
+          <p className="text-sm text-white/35 mb-6">
+            Check that the API is running and you are still signed in, then try again.
+          </p>
+          <button
+            type="button"
+            onClick={() => fetchDashboard()}
+            className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-gold to-gold-dim text-surface-0 font-semibold text-sm"
+          >
+            <RefreshCw className="w-4 h-4" />
+            Retry
+          </button>
         </div>
       </div>
     );
@@ -85,28 +112,46 @@ export default function DashboardPage() {
     { label: "Liked", value: summary.likes || 0, icon: Heart, color: "text-emerald-400", bg: "from-emerald-500/10 to-emerald-600/5" },
     { label: "Disliked", value: summary.dislikes || 0, icon: ThumbsDown, color: "text-red-400", bg: "from-red-500/10 to-red-600/5" },
     { label: "Watched", value: summary.watched || 0, icon: Eye, color: "text-blue-400", bg: "from-blue-500/10 to-blue-600/5" },
+    { label: "Searches", value: summary.searches || 0, icon: Search, color: "text-violet-400", bg: "from-violet-500/10 to-violet-600/5" },
     { label: "Watchlist", value: summary.watchlist_total || 0, icon: Bookmark, color: "text-gold", bg: "from-gold/10 to-amber-600/5" },
   ];
 
   return (
     <div className="pt-24 pb-20 px-6 md:px-10 lg:px-20 max-w-[1440px] mx-auto">
       {/* Header */}
-      <div className="flex items-center gap-4 mb-10">
-        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-gold to-gold-dim flex items-center justify-center shadow-lg shadow-gold/10">
-          <BarChart3 className="w-5 h-5 text-surface-0" />
+      <div className="flex flex-wrap items-start justify-between gap-4 mb-10">
+        <div className="flex items-center gap-4 min-w-0 flex-1">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-gold to-gold-dim flex items-center justify-center shadow-lg shadow-gold/10 flex-shrink-0">
+            <BarChart3 className="w-5 h-5 text-surface-0" />
+          </div>
+          <div className="min-w-0">
+            <h1 className="text-3xl font-bold font-display">
+              Your <span className="text-gold italic">Dashboard</span>
+            </h1>
+            <p className="text-sm text-white/30">
+              Welcome back, {user?.username}. Here&apos;s your movie journey.
+              {summary.average_rating != null && (
+                <span className="block mt-1 text-gold/70">
+                  Avg rating you give:{" "}
+                  <span className="font-mono tabular-nums">{summary.average_rating}</span>/10
+                </span>
+              )}
+            </p>
+          </div>
         </div>
-        <div>
-          <h1 className="text-3xl font-bold font-display">
-            Your <span className="text-gold italic">Dashboard</span>
-          </h1>
-          <p className="text-sm text-white/30">
-            Welcome back, {user?.username}. Here&apos;s your movie journey.
-          </p>
-        </div>
+        <button
+          type="button"
+          onClick={() => fetchDashboard()}
+          className="hidden sm:inline-flex items-center gap-2 h-10 px-4 rounded-xl glass-card text-xs font-medium text-white/50 hover:text-white border border-white/[0.06] hover:border-gold/20 transition-all flex-shrink-0"
+          title="Refresh stats"
+        >
+          <RefreshCw className="w-3.5 h-3.5" />
+          Refresh
+        </button>
       </div>
 
       {/* Statistics cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 mb-10">
         {statCards.map(({ label, value, icon: Icon, color, bg }) => (
           <div key={label} className="glass-card rounded-xl p-5 relative overflow-hidden">
             <div className={`absolute inset-0 bg-gradient-to-br ${bg}`} />
@@ -223,11 +268,11 @@ export default function DashboardPage() {
           <div className="space-y-2">
             {recent.map((item: any, i: number) => (
               <div
-                key={i}
-                className="flex items-center justify-between p-3 rounded-lg bg-white/[0.02] border border-white/[0.04]"
+                key={item.id ?? i}
+                className="flex items-center justify-between gap-3 p-3 rounded-lg bg-white/[0.02] border border-white/[0.04]"
               >
-                <div className="flex items-center gap-3">
-                  <span className={`text-xs font-semibold px-2 py-0.5 rounded-md ${
+                <div className="flex items-center gap-3 min-w-0">
+                  <span className={`text-xs font-semibold px-2 py-0.5 rounded-md flex-shrink-0 ${
                     item.interaction_type === "like" ? "bg-emerald-500/15 text-emerald-400" :
                     item.interaction_type === "dislike" ? "bg-red-500/15 text-red-400" :
                     item.interaction_type === "watched" ? "bg-blue-500/15 text-blue-400" :
@@ -235,9 +280,18 @@ export default function DashboardPage() {
                   }`}>
                     {item.interaction_type}
                   </span>
-                  <span className="text-sm text-white/70">{item.movie_title}</span>
+                  {item.movie_tmdb_id ? (
+                    <Link
+                      href={`/movie/${item.movie_tmdb_id}`}
+                      className="text-sm text-white/70 hover:text-gold truncate transition-colors"
+                    >
+                      {item.movie_title}
+                    </Link>
+                  ) : (
+                    <span className="text-sm text-white/70 truncate">{item.movie_title}</span>
+                  )}
                 </div>
-                <span className="text-[11px] text-white/20">
+                <span className="text-[11px] text-white/20 flex-shrink-0">
                   {new Date(item.created_at).toLocaleDateString()}
                 </span>
               </div>
