@@ -25,6 +25,8 @@ const MOODS = [
 ];
 
 function MoodContent() {
+  const renderSkeletons = () => Array.from({ length: 18 }).map((_, i) => <MovieCardSkeleton key={i} />);
+
   const searchParams = useSearchParams();
   const router = useRouter();
   const activeMood = searchParams.get("mood") || "";
@@ -32,8 +34,10 @@ function MoodContent() {
   const [movies, setMovies] = useState<MovieCompact[]>([]);
   const [moodInfo, setMoodInfo] = useState<any>(null);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [totalResults, setTotalResults] = useState(0);
   const [toastMessage, setToastMessage] = useState<string>("");
   const [focusedIndex, setFocusedIndex] = useState<number>(-1);
   const [showBackToTop, setShowBackToTop] = useState(false);
@@ -75,14 +79,18 @@ function MoodContent() {
 
   async function fetchMoodMovies(slug: string, p: number) {
     setLoading(true);
+    setError(null);
     try {
       const data = await moviesAPI.getMoodMovies(slug, p);
       setMovies(data.results || []);
       setMoodInfo(data.mood);
       setTotalPages(data.total_pages || 1);
+      setTotalResults(data.total_results || 0);
       setPage(p);
-    } catch (err) {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    } catch (err: any) {
       console.error(err);
+      setError(err.message || 'Failed to fetch movies matching this mood. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -137,6 +145,8 @@ function MoodContent() {
           return (
             <button
               key={mood.slug}
+              onClick={() => { if (!isActive) router.push(`/mood?mood=${mood.slug}`) }}
+              className={`genre-card glass-card group relative overflow-hidden rounded-xl p-5 text-center transition-all duration-300 ${
               tabIndex={0}
               onFocus={() => setFocusedIndex(MOODS.findIndex(m => m.slug === mood.slug))}
               onClick={() => {
@@ -170,12 +180,28 @@ function MoodContent() {
           {moodInfo && (
             <div className="flex items-center justify-between mb-8">
               <div>
-                <h2 className="text-2xl font-bold font-display">{moodInfo.label}</h2>
+                <div className="flex items-center gap-4">
+                  <h2 className="text-2xl font-bold font-display">{moodInfo.label}</h2>
+                  <button onClick={() => router.push('/mood')} className="text-xs px-3 py-1.5 rounded-lg border border-white/10 hover:bg-white/5 transition-colors text-white/40">Clear</button>
+                </div>
                 <p className="text-sm text-white/30 mt-0.5">{moodInfo.description}</p>
+                {totalResults > 0 && <span className="inline-block mt-2 text-[11px] px-2 py-1 bg-white/5 rounded-md text-white/40">{totalResults} titles found</span>}
               </div>
             </div>
           )}
 
+          {error ? (
+            <div className="flex flex-col items-center justify-center py-20 text-center glass-card rounded-2xl border border-red-500/10">
+              <Zap className="w-10 h-10 text-red-400 mb-4" />
+              <h3 className="text-xl font-display font-medium text-white/90 mb-2">Something went wrong</h3>
+              <p className="text-sm text-white/40 mb-6">{error}</p>
+              <button type="button" onClick={() => fetchMoodMovies(activeMood, page)} className="px-6 py-2.5 rounded-xl bg-red-500/10 text-red-400 text-sm font-medium hover:bg-red-500/20 transition-colors">
+                Retry
+              </button>
+            </div>
+          ) : loading ? (
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-5">
+              {renderSkeletons()}
           {loading ? (
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-5 relative">
               <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent animate-pulse" />
@@ -196,6 +222,7 @@ function MoodContent() {
                   <button
                     onClick={() => fetchMoodMovies(activeMood, page - 1)}
                     disabled={page <= 1}
+                    className="px-5 py-2.5 rounded-xl glass-card text-sm font-medium disabled:opacity-20 hover:bg-white/5 transition-all active:scale-95"
                     className="px-5 py-2.5 rounded-xl glass-card text-sm font-medium disabled:opacity-30 disabled:cursor-not-allowed hover:bg-white/10 transition-colors disabled:hover:bg-transparent"
                   >
                     Previous
@@ -204,6 +231,7 @@ function MoodContent() {
                   <button
                     onClick={() => fetchMoodMovies(activeMood, page + 1)}
                     disabled={page >= totalPages}
+                    className="px-5 py-2.5 rounded-xl glass-card text-sm font-medium disabled:opacity-20 hover:bg-white/5 transition-all active:scale-95"
                     className="px-5 py-2.5 rounded-xl glass-card text-sm font-medium disabled:opacity-30 disabled:cursor-not-allowed hover:bg-white/10 transition-colors disabled:hover:bg-transparent"
                   >
                     Next
