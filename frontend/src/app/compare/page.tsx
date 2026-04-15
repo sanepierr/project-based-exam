@@ -257,6 +257,9 @@ function CompareContent() {
         <p className="text-white/35 max-w-md mx-auto">
           Pick two movies and compare them head to head, ratings, budget, cast, and more.
         </p>
+        <p className="text-[11px] text-white/20 mt-3 font-mono max-w-lg mx-auto">
+          Deep link: /compare?a=&lt;TMDB_ID&gt;&b=&lt;TMDB_ID&gt;
+        </p>
       </div>
 
       {/* Movie Selectors */}
