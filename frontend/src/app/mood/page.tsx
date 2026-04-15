@@ -105,6 +105,7 @@ function MoodContent() {
   const [focusedIndex, setFocusedIndex] = useState<number>(-1);
   const [showBackToTop, setShowBackToTop] = useState(false);
   const [themeColor, setThemeColor] = useState<string>("");
+  const [isTransitioning, setIsTransitioning] = useState(false);
   const [quizActive, setQuizActive] = useState(false);
   const [quizStep, setQuizStep] = useState(0);
   const [quizAnswers, setQuizAnswers] = useState<string[]>([]);
