@@ -268,6 +268,13 @@ function CompareContent() {
           <code className="text-white/80">b</code>.
         </div>
       )}
+
+      {urlLoadError && (
+        <div className="mb-8 max-w-xl mx-auto rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-100/90 text-center">
+          Could not load one or both films from the link. Check the IDs or pick movies below.
+        </div>
+      )}
+
       {/* Movie Selectors */}
       <div className="flex items-start gap-6 mb-12">
         <MovieSelector
