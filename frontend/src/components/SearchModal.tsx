@@ -269,11 +269,17 @@ export default function SearchModal({ open, onClose }: SearchModalProps) {
             <div className="p-10 text-center">
               <Search className="w-8 h-8 mx-auto mb-3 text-white/10" />
               <p className="text-sm text-white/25">
-                No movies found for &ldquo;{query}&rdquo;
+                No results for &ldquo;{query}&rdquo;
               </p>
-              <p className="text-xs text-white/20 mt-1">
-                Try a title, cast member, or franchise keyword
+              <p className="text-xs text-white/15 mt-1.5">
+                Try a different title, director, or cast member
               </p>
+              <button
+                onClick={() => setQuery("")}
+                className="mt-4 text-xs text-gold/40 hover:text-gold/70 transition-colors"
+              >
+                Clear search
+              </button>
             </div>
           )}
 
