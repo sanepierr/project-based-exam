@@ -71,6 +71,7 @@ class RecommendationEngine:
         return sorted(genre_scores.items(), key=lambda x: x[1], reverse=True)
 
     def get_recommendations(self, user, page: int = 1, limit: int = 20) -> list:
+        logger.info(f"Generating personalized recommendations for user_id={user.id}")
         from recommendations.models import UserMovieInteraction
 
         ## computing fresh preferences
