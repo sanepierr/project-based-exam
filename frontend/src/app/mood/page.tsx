@@ -347,6 +347,16 @@ function MoodContent() {
           <HelpCircle className="w-4 h-4" />
           Take Quiz
         </button>
+        <button
+          onClick={() => {
+            const suggestedMood = getSuggestedMoodByTime();
+            setActiveMood(suggestedMood);
+          }}
+          className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-white/10 hover:bg-white/20 border border-white/20 text-white font-semibold transition-all duration-200 hover:scale-105 ml-4"
+        >
+          <Calendar className="w-4 h-4" />
+          Time-Based Mood
+        </button>
       </div>
 
       {/* Take Quiz Button */}
