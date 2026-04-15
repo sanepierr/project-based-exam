@@ -82,11 +82,16 @@ class TMDBService:
         """getting  similar movies."""
         return self._get(f"movie/{tmdb_id}/similar", {"page": page})
 
+    def search_keywords(self, query: str) -> list:
+        """Search TMDB keyword database. Returns list of {id, name} dicts."""
+        data = self._get("search/keyword", {"query": query})
+        return data.get("results", [])
+
     def discover_movies(self, **kwargs) -> dict:
         """
         Discover movies with flexible filters.
         Supports: with_genres, sort_by, primary_release_year,
-                  vote_average.gte, with_people, etc.
+                  vote_average.gte, with_people, with_keywords, etc.
         """
         return self._get("discover/movie", kwargs)
 

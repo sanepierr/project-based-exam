@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect, Suspense } from "react";
-import { useSearchParams } from "next/navigation";
+import { useState, useEffect, useRef, Suspense } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Search, SlidersHorizontal, X, Loader2, ChevronDown } from "lucide-react";
 import MovieCard, { MovieCardSkeleton } from "@/components/MovieCard";
 import { moviesAPI } from "@/lib/api";
@@ -28,6 +28,10 @@ const LANGUAGES = [
   { value: "it", label: "Italian" },
 ];
 
+const MIN_YEAR = 1900;
+const MAX_YEAR = 2026;
+const MAX_PAGES = 500;
+
 const GENRE_LIST = [
   { id: 28, name: "Action" }, { id: 12, name: "Adventure" }, { id: 16, name: "Animation" },
   { id: 35, name: "Comedy" }, { id: 80, name: "Crime" }, { id: 99, name: "Documentary" },
@@ -38,6 +42,8 @@ const GENRE_LIST = [
 ];
 
 function SearchContent() {
+  const router = useRouter();
+  const pathname = usePathname();
   const searchParams = useSearchParams();
   const initialQuery = searchParams.get("q") || "";
   const sortParam = searchParams.get("sort") || "";
@@ -49,6 +55,7 @@ function SearchContent() {
   const [totalPages, setTotalPages] = useState(1);
   const [totalResults, setTotalResults] = useState(0);
   const [filtersOpen, setFiltersOpen] = useState(false);
+  const requestIdRef = useRef(0);
 
   // Filter state
   const [filterGenre, setFilterGenre] = useState("");
@@ -62,6 +69,37 @@ function SearchContent() {
 
   const hasActiveFilters = !!(filterGenre || filterYearFrom || filterYearTo || filterRating || filterRuntimeMin || filterRuntimeMax || filterLanguage);
 
+  function sanitizeNumberInput(value: string, min: number, max: number) {
+    const cleaned = value.replace(/[^\d]/g, "");
+    if (!cleaned) return "";
+    const parsed = Number(cleaned);
+    return String(Math.min(Math.max(parsed, min), max));
+  }
+
+  function normalizeTotalPages(total: number | undefined) {
+    if (!total || Number.isNaN(total)) return 1;
+    return Math.min(Math.max(total, 1), MAX_PAGES);
+  }
+
+  function startRequest() {
+    requestIdRef.current += 1;
+    return requestIdRef.current;
+  }
+
+  function isActiveRequest(requestId: number) {
+    return requestIdRef.current === requestId;
+  }
+
+  function updateQueryParam(nextQuery: string) {
+    const params = new URLSearchParams(searchParams.toString());
+    if (nextQuery) {
+      params.set("q", nextQuery);
+    } else {
+      params.delete("q");
+    }
+    router.replace(`${pathname}?${params.toString()}`);
+  }
+
   useEffect(() => {
     if (initialQuery) {
       performSearch(initialQuery, 1);
@@ -72,23 +110,33 @@ function SearchContent() {
     }
   }, [initialQuery, sortParam]);
 
+  useEffect(() => {
+    setQuery(initialQuery);
+  }, [initialQuery]);
+
   async function performSearch(q: string, p: number) {
     if (!q.trim()) return;
+    const requestId = startRequest();
     setLoading(true);
     try {
       const data = await moviesAPI.search(q, p);
+      if (!isActiveRequest(requestId)) return;
       setResults(data.results);
-      setTotalPages(data.total_pages || 1);
+      setTotalPages(normalizeTotalPages(data.total_pages));
       setTotalResults(data.total_results || 0);
       setPage(p);
     } catch (err) {
+      if (!isActiveRequest(requestId)) return;
       console.error(err);
     } finally {
-      setLoading(false);
+      if (isActiveRequest(requestId)) {
+        setLoading(false);
+      }
     }
   }
 
   async function loadCategory(cat: string, p: number) {
+    const requestId = startRequest();
     setLoading(true);
     try {
       let data;
@@ -97,22 +145,26 @@ function SearchContent() {
         case "top_rated": data = await moviesAPI.topRated(p); break;
         default: data = await moviesAPI.trending("week", p);
       }
+      if (!isActiveRequest(requestId)) return;
       setResults(data.results);
-      setTotalPages(data.total_pages || 1);
+      setTotalPages(normalizeTotalPages(data.total_pages));
+      setTotalResults(data.total_results || data.results.length || 0);
       setPage(p);
     } catch (err) {
+      if (!isActiveRequest(requestId)) return;
       console.error(err);
     } finally {
-      setLoading(false);
+      if (isActiveRequest(requestId)) {
+        setLoading(false);
+      }
     }
   }
 
   async function applyFilters(p: number = 1) {
-    setLoading(true);
-    try {
+    function buildDiscoverParams(pageNumber: number) {
       const params: Record<string, string | number> = {
         sort: filterSort,
-        page: p,
+        page: pageNumber,
       };
       if (filterGenre) params.genre = filterGenre;
       if (filterYearFrom) params.year_from = filterYearFrom;
@@ -121,16 +173,25 @@ function SearchContent() {
       if (filterRuntimeMin) params.runtime_min = filterRuntimeMin;
       if (filterRuntimeMax) params.runtime_max = filterRuntimeMax;
       if (filterLanguage) params.language = filterLanguage;
+      return params;
+    }
 
-      const data = await moviesAPI.discover(params);
+    const requestId = startRequest();
+    setLoading(true);
+    try {
+      const data = await moviesAPI.discover(buildDiscoverParams(p));
+      if (!isActiveRequest(requestId)) return;
       setResults(data.results);
-      setTotalPages(data.total_pages || 1);
+      setTotalPages(normalizeTotalPages(data.total_pages));
       setTotalResults(data.total_results || 0);
       setPage(p);
     } catch (err) {
+      if (!isActiveRequest(requestId)) return;
       console.error(err);
     } finally {
-      setLoading(false);
+      if (isActiveRequest(requestId)) {
+        setLoading(false);
+      }
     }
   }
 
@@ -143,20 +204,26 @@ function SearchContent() {
     setFilterRuntimeMax("");
     setFilterLanguage("");
     setFilterSort("popularity.desc");
+    setFiltersOpen(false);
+    if (initialQuery) {
+      performSearch(initialQuery, 1);
+      return;
+    }
+    loadCategory(sortParam || "trending", 1);
   }
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (query.trim()) {
-      performSearch(query, 1);
-    }
+    const trimmedQuery = query.trim();
+    updateQueryParam(trimmedQuery);
   }
 
   function handlePageChange(newPage: number) {
+    const activeQuery = initialQuery || query.trim();
     if (hasActiveFilters || filterSort !== "popularity.desc") {
       applyFilters(newPage);
-    } else if (initialQuery) {
-      performSearch(initialQuery, newPage);
+    } else if (activeQuery) {
+      performSearch(activeQuery, newPage);
     } else {
       loadCategory(sortParam || "trending", newPage);
     }
@@ -173,6 +240,14 @@ function SearchContent() {
     : hasActiveFilters
     ? "Filtered Results"
     : categoryLabels[sortParam] || "Trending Movies";
+  const emptyStateTitle = hasActiveFilters
+    ? "No movies matched these filters"
+    : initialQuery
+    ? `No movies found for "${initialQuery}"`
+    : "No movies found";
+  const emptyStateHint = hasActiveFilters
+    ? "Try broadening your year, rating, or runtime filters"
+    : "Try adjusting your filters or search term";
 
   return (
     <div className="pt-24 pb-20 px-6 md:px-10 lg:px-20 max-w-[1440px] mx-auto">
@@ -185,6 +260,7 @@ function SearchContent() {
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search movies, directors, actors..."
+            aria-label="Search for movies, directors, or actors"
             className="w-full h-14 pr-5 rounded-2xl bg-surface-2 border border-white/[0.08] text-white placeholder:text-white/25 outline-none focus:border-gold/40 focus:ring-1 focus:ring-gold/20 transition-all text-lg font-body"
             style={{ paddingLeft: "3.25rem" }}
           />
@@ -195,6 +271,8 @@ function SearchContent() {
       <div className="flex items-center justify-center mb-8">
         <button
           onClick={() => setFiltersOpen(!filtersOpen)}
+          aria-expanded={filtersOpen}
+          aria-controls="advanced-search-filters"
           className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-medium transition-all ${
             filtersOpen || hasActiveFilters
               ? "bg-gold/15 border border-gold/25 text-gold"
@@ -212,7 +290,7 @@ function SearchContent() {
 
       {/* Filters panel */}
       {filtersOpen && (
-        <div className="glass-card rounded-2xl p-6 mb-10 animate-slide-up">
+        <div id="advanced-search-filters" className="glass-card rounded-2xl p-6 mb-10 animate-slide-up">
           <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-gold/15 to-transparent" />
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-5">
@@ -238,7 +316,7 @@ function SearchContent() {
                 <input
                   type="number"
                   value={filterYearFrom}
-                  onChange={(e) => setFilterYearFrom(e.target.value)}
+                  onChange={(e) => setFilterYearFrom(sanitizeNumberInput(e.target.value, MIN_YEAR, MAX_YEAR))}
                   placeholder="From"
                   min="1900"
                   max="2026"
@@ -247,7 +325,7 @@ function SearchContent() {
                 <input
                   type="number"
                   value={filterYearTo}
-                  onChange={(e) => setFilterYearTo(e.target.value)}
+                  onChange={(e) => setFilterYearTo(sanitizeNumberInput(e.target.value, MIN_YEAR, MAX_YEAR))}
                   placeholder="To"
                   min="1900"
                   max="2026"
@@ -293,7 +371,7 @@ function SearchContent() {
                 <input
                   type="number"
                   value={filterRuntimeMin}
-                  onChange={(e) => setFilterRuntimeMin(e.target.value)}
+                  onChange={(e) => setFilterRuntimeMin(sanitizeNumberInput(e.target.value, 0, 500))}
                   placeholder="Min"
                   min="0"
                   className="w-full h-10 px-3 rounded-xl bg-surface-2 border border-white/[0.08] text-white text-sm outline-none focus:border-gold/30 placeholder:text-white/20 transition-colors"
@@ -301,7 +379,7 @@ function SearchContent() {
                 <input
                   type="number"
                   value={filterRuntimeMax}
-                  onChange={(e) => setFilterRuntimeMax(e.target.value)}
+                  onChange={(e) => setFilterRuntimeMax(sanitizeNumberInput(e.target.value, 0, 500))}
                   placeholder="Max"
                   min="0"
                   className="w-full h-10 px-3 rounded-xl bg-surface-2 border border-white/[0.08] text-white text-sm outline-none focus:border-gold/30 placeholder:text-white/20 transition-colors"
@@ -328,14 +406,16 @@ function SearchContent() {
           <div className="flex items-center gap-3 pt-3 border-t border-white/[0.04]">
             <button
               onClick={() => applyFilters(1)}
-              className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-gold to-gold-dim text-surface-0 font-semibold text-sm hover:shadow-lg hover:shadow-gold/15 transition-all"
+              disabled={loading}
+              className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-gold to-gold-dim text-surface-0 font-semibold text-sm hover:shadow-lg hover:shadow-gold/15 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Apply Filters
             </button>
             {hasActiveFilters && (
               <button
                 onClick={clearFilters}
-                className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl glass text-sm text-white/50 hover:text-white transition-colors"
+                disabled={loading}
+                className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl glass text-sm text-white/50 hover:text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <X className="w-3.5 h-3.5" />
                 Clear all
@@ -376,7 +456,7 @@ function SearchContent() {
                 Previous
               </button>
               <span className="text-sm text-white/30 font-mono tabular-nums px-4">
-                {page} / {Math.min(totalPages, 500)}
+                {page} / {totalPages}
               </span>
               <button
                 onClick={() => handlePageChange(page + 1)}
@@ -393,8 +473,8 @@ function SearchContent() {
           <div className="w-16 h-16 rounded-2xl glass-card flex items-center justify-center mx-auto mb-5">
             <Search className="w-7 h-7 text-white/15" />
           </div>
-          <p className="text-lg text-white/25 mb-2">No movies found</p>
-          <p className="text-sm text-white/15">Try adjusting your filters or search term</p>
+          <p className="text-lg text-white/25 mb-2">{emptyStateTitle}</p>
+          <p className="text-sm text-white/15">{emptyStateHint}</p>
         </div>
       )}
     </div>

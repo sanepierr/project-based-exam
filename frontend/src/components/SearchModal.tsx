@@ -3,10 +3,18 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
-import { Search, X, Loader2, Star, TrendingUp } from "lucide-react";
+import { Search, Loader2, Star } from "lucide-react";
 import { moviesAPI } from "@/lib/api";
 import { posterUrl } from "@/lib/utils";
 import type { MovieCompact } from "@/types/movie";
+
+const SEARCH_HINTS = [
+  "Inception",
+  "Parasite",
+  "Spider-Man",
+  "Hayao Miyazaki",
+  "Studio Ghibli",
+];
 
 interface SearchModalProps {
   open: boolean;
@@ -19,6 +27,7 @@ export default function SearchModal({ open, onClose }: SearchModalProps) {
   const [loading, setLoading] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(-1);
   const inputRef = useRef<HTMLInputElement>(null);
+  const requestIdRef = useRef(0);
   const router = useRouter();
 
   useEffect(() => {
@@ -48,19 +57,31 @@ export default function SearchModal({ open, onClose }: SearchModalProps) {
 
   // Debounced search
   useEffect(() => {
+    if (selectedIndex >= results.length) {
+      setSelectedIndex(results.length - 1);
+    }
+  }, [results, selectedIndex]);
+
+  useEffect(() => {
     if (query.length < 2) {
       setResults([]);
       return;
     }
+    requestIdRef.current += 1;
+    const activeRequestId = requestIdRef.current;
     const timer = setTimeout(async () => {
       setLoading(true);
       try {
         const data = await moviesAPI.search(query);
+        if (activeRequestId !== requestIdRef.current) return;
         setResults(data.results.slice(0, 6));
       } catch {
+        if (activeRequestId !== requestIdRef.current) return;
         setResults([]);
       } finally {
-        setLoading(false);
+        if (activeRequestId === requestIdRef.current) {
+          setLoading(false);
+        }
       }
     }, 250);
     return () => clearTimeout(timer);
@@ -128,13 +149,15 @@ export default function SearchModal({ open, onClose }: SearchModalProps) {
                 setSelectedIndex(-1);
               }}
               placeholder="Search movies, directors, actors..."
-              className="flex-1 bg-transparent text-white placeholder:text-white/25 outline-none text-lg font-body"
+              aria-label="Search movies, directors, and actors"
+              className="flex-1 bg-transparent text-white placeholder:text-white/25 outline-none text-lg font-body focus-visible:ring-1 focus-visible:ring-gold/30 rounded-md"
             />
             {loading && <Loader2 className="w-5 h-5 text-gold/40 animate-spin" />}
             <button
               type="button"
               onClick={onClose}
-              className="text-[10px] text-white/20 px-2 py-1 rounded border border-white/8 font-mono hover:border-white/15 transition-colors"
+              aria-label="Close search modal"
+              className="text-[10px] text-white/20 px-2 py-1 rounded border border-white/8 font-mono hover:border-white/15 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-gold/30 transition-colors"
             >
               ESC
             </button>
@@ -147,7 +170,7 @@ export default function SearchModal({ open, onClose }: SearchModalProps) {
 
           {/* Results */}
           {results.length > 0 && (
-            <div className="max-h-[45vh] overflow-y-auto p-2">
+            <div className="max-h-[45vh] overflow-y-auto p-2" role="listbox" aria-label="Search results">
               <p className="text-[10px] uppercase tracking-wider text-white/20 px-3 py-2 font-semibold">
                 Movies
               </p>
@@ -155,9 +178,11 @@ export default function SearchModal({ open, onClose }: SearchModalProps) {
                 <button
                   key={movie.id || movie.tmdb_id}
                   onClick={() => handleSelect(movie.tmdb_id || movie.id)}
-                  className={`w-full flex items-center gap-4 p-3 rounded-xl transition-all text-left ${
+                  role="option"
+                  aria-selected={i === selectedIndex}
+                  className={`w-full flex items-center gap-4 p-3 rounded-xl transition-all text-left focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-gold/40 ${
                     i === selectedIndex
-                      ? "bg-gold/10 border border-gold/15"
+                      ? "bg-gold/10 border border-gold/15 ring-1 ring-gold/20"
                       : "hover:bg-white/[0.04] border border-transparent"
                   }`}
                 >
@@ -191,7 +216,7 @@ export default function SearchModal({ open, onClose }: SearchModalProps) {
               {/* See all */}
               <button
                 onClick={handleSubmit}
-                className="w-full flex items-center justify-center gap-2 text-sm text-gold/60 hover:text-gold py-3 transition-colors"
+                className="w-full flex items-center justify-center gap-2 text-sm text-gold/60 hover:text-gold py-3 rounded-lg focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-gold/40 transition-colors"
               >
                 See all results for &ldquo;{query}&rdquo;
                 <span className="text-gold/40">→</span>
@@ -206,6 +231,9 @@ export default function SearchModal({ open, onClose }: SearchModalProps) {
               <p className="text-sm text-white/25">
                 No movies found for &ldquo;{query}&rdquo;
               </p>
+              <p className="text-xs text-white/20 mt-1">
+                Try a title, cast member, or franchise keyword
+              </p>
             </div>
           )}
 
@@ -216,17 +244,15 @@ export default function SearchModal({ open, onClose }: SearchModalProps) {
                 Try searching for
               </p>
               <div className="flex flex-wrap gap-2 px-3">
-                {["Inception", "Christopher Nolan", "Sci-Fi", "The Godfather", "Studio Ghibli"].map(
-                  (hint) => (
-                    <button
-                      key={hint}
-                      onClick={() => setQuery(hint)}
-                      className="px-3 py-1.5 rounded-lg bg-white/[0.03] border border-white/[0.06] text-[12px] text-white/40 hover:text-white/60 hover:border-gold/15 transition-all"
-                    >
-                      {hint}
-                    </button>
-                  )
-                )}
+                {SEARCH_HINTS.map((hint) => (
+                  <button
+                    key={hint}
+                    onClick={() => setQuery(hint)}
+                    className="px-3 py-1.5 rounded-lg bg-white/[0.03] border border-white/[0.06] text-[12px] text-white/40 hover:text-white/60 hover:border-gold/15 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-gold/40 transition-all"
+                  >
+                    {hint}
+                  </button>
+                ))}
               </div>
             </div>
           )}

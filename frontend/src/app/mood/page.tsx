@@ -5,7 +5,7 @@ import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import {
   Sparkles, Heart, Zap, Flame, Brain, Smile, Ghost,
-  Mountain, Baby, BookOpen, ArrowLeft, Loader2,
+  Mountain, Baby, BookOpen, ArrowLeft, Loader2, Shuffle,
 } from "lucide-react";
 import MovieCard, { MovieCardSkeleton } from "@/components/MovieCard";
 import { moviesAPI } from "@/lib/api";
@@ -38,6 +38,9 @@ function MoodContent() {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalResults, setTotalResults] = useState(0);
+  const [toastMessage, setToastMessage] = useState<string>("");
+  const [focusedIndex, setFocusedIndex] = useState<number>(-1);
+  const [showBackToTop, setShowBackToTop] = useState(false);
 
   useEffect(() => {
     document.title = activeMood && moodInfo ? `${moodInfo.label} Movies - CineQuest` : "Mood Picker - CineQuest";
@@ -47,6 +50,36 @@ function MoodContent() {
     if (!activeMood) return;
     fetchMoodMovies(activeMood, 1);
   }, [activeMood]);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (focusedIndex === -1) return;
+      if (e.key === "Enter") {
+        const mood = MOODS[focusedIndex];
+        setToastMessage(`Selected ${mood.label}`);
+        setTimeout(() => setToastMessage(""), 2000);
+        router.push(`/mood?mood=${mood.slug}`);
+      } else if (e.key === "ArrowRight") {
+        setFocusedIndex((prev) => (prev + 1) % MOODS.length);
+      } else if (e.key === "ArrowLeft") {
+        setFocusedIndex((prev) => (prev - 1 + MOODS.length) % MOODS.length);
+      } else if (e.key === "ArrowDown") {
+        setFocusedIndex((prev) => Math.min(prev + 5, MOODS.length - 1));
+      } else if (e.key === "ArrowUp") {
+        setFocusedIndex((prev) => Math.max(prev - 5, 0));
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [focusedIndex, router]);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setShowBackToTop(window.scrollY > 300);
+    };
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
 
   async function fetchMoodMovies(slug: string, p: number) {
     setLoading(true);
@@ -74,6 +107,13 @@ function MoodContent() {
         <span className="hidden sm:inline">Back to Dashboard</span>
       </Link>
 
+      {/* Toast */}
+      {toastMessage && (
+        <div className="fixed top-4 left-1/2 transform -translate-x-1/2 z-50 bg-gold/90 text-black px-4 py-2 rounded-lg font-semibold transition-opacity duration-300">
+          {toastMessage}
+        </div>
+      )}
+
       {/* Header */}
       <div className="text-center mb-12">
         <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-gold/10 border border-gold/15 mb-5">
@@ -90,6 +130,22 @@ function MoodContent() {
         </p>
       </div>
 
+      {/* Surprise Me Button */}
+      <div className="flex justify-center mb-8">
+        <button
+          onClick={() => {
+            const randomMood = MOODS[Math.floor(Math.random() * MOODS.length)];
+            setToastMessage(`Surprise! Selected ${randomMood.label}`);
+            setTimeout(() => setToastMessage(""), 2000);
+            router.push(`/mood?mood=${randomMood.slug}`);
+          }}
+          className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-gold/10 hover:bg-gold/20 border border-gold/20 text-gold font-semibold transition-all duration-200 hover:scale-105"
+        >
+          <Shuffle className="w-4 h-4" />
+          Surprise Me
+        </button>
+      </div>
+
       {/* Mood grid */}
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3 mb-14">
         {MOODS.map((mood) => {
@@ -98,8 +154,16 @@ function MoodContent() {
           return (
             <button
               key={mood.slug}
-              onClick={() => { if (!isActive) router.push(`/mood?mood=${mood.slug}`) }}
-              className={`genre-card glass-card group relative overflow-hidden rounded-xl p-5 text-center transition-all duration-300 ${
+              tabIndex={0}
+              onFocus={() => setFocusedIndex(MOODS.findIndex(m => m.slug === mood.slug))}
+              onClick={() => {
+                if (!isActive) {
+                  setToastMessage(`Selected ${mood.label}`);
+                  setTimeout(() => setToastMessage(""), 2000);
+                  router.push(`/mood?mood=${mood.slug}`);
+                }
+              }}
+              className={`genre-card glass-card group relative overflow-hidden rounded-xl p-5 text-center transition-all duration-300 hover:scale-105 focus:outline-none focus:ring-2 focus:ring-gold/50 ${
                 isActive ? "ring-2 ring-gold/40 scale-[1.03] shadow-[0_0_20px_rgba(234,179,8,0.25)]" : ""
               }`}
             >
@@ -109,7 +173,10 @@ function MoodContent() {
               <div className="relative z-10">
                 <Icon className={`w-6 h-6 mx-auto mb-2 ${isActive ? mood.iconColor : "text-white/30"} group-hover:${mood.iconColor} transition-colors`} />
                 <p className="text-sm font-semibold text-white/80 mb-0.5">{mood.label}</p>
-                <p className="text-[10px] text-white/30">{mood.desc}</p>
+                <p className="text-[10px] text-white/30 group-hover:opacity-0 transition-opacity">{mood.desc}</p>
+                <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-black/80 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">
+                  {mood.desc}
+                </div>
               </div>
             </button>
           );
@@ -142,7 +209,8 @@ function MoodContent() {
               </button>
             </div>
           ) : loading ? (
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-5 opacity-80 animate-pulse">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-5 relative opacity-80 animate-pulse">
+              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent animate-pulse" />
               {renderSkeletons()}
             </div>
           ) : movies.length === 0 ? (
@@ -169,7 +237,7 @@ function MoodContent() {
                   <button
                     onClick={() => fetchMoodMovies(activeMood, page - 1)}
                     disabled={page <= 1}
-                    className="px-5 py-2.5 rounded-xl glass-card text-sm font-medium disabled:opacity-20 hover:bg-white/5 transition-all active:scale-95 flex items-center gap-2"
+                    className="px-5 py-2.5 rounded-xl glass-card text-sm font-medium disabled:opacity-30 disabled:cursor-not-allowed hover:bg-white/10 transition-colors disabled:hover:bg-transparent flex items-center gap-2"
                   >
                     <ArrowLeft className="w-4 h-4" /> Previous
                   </button>
@@ -179,7 +247,12 @@ function MoodContent() {
                   <button
                     onClick={() => fetchMoodMovies(activeMood, page + 1)}
                     disabled={page >= totalPages}
+<<<<<<< HEAD
                     className="px-5 py-2.5 rounded-xl glass-card text-sm font-medium disabled:opacity-20 hover:bg-white/5 transition-all active:scale-95 flex items-center gap-2"
+=======
+                    className="px-5 py-2.5 rounded-xl glass-card text-sm font-medium disabled:opacity-20 hover:bg-white/5 transition-all active:scale-95"
+                    className="px-5 py-2.5 rounded-xl glass-card text-sm font-medium disabled:opacity-30 disabled:cursor-not-allowed hover:bg-white/10 transition-colors disabled:hover:bg-transparent"
+>>>>>>> 047378e029ea5e349ce99dcf35bbbedf11f7440c
                   >
                     Next <ArrowLeft className="w-4 h-4 rotate-180" />
                   </button>
@@ -188,6 +261,16 @@ function MoodContent() {
             </>
           )}
         </div>
+      )}
+
+      {/* Back to Top Button */}
+      {showBackToTop && (
+        <button
+          onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+          className="fixed bottom-8 right-8 z-40 bg-gold/20 hover:bg-gold/30 border border-gold/30 text-gold p-3 rounded-full transition-all duration-200 hover:scale-110"
+        >
+          <ArrowLeft className="w-5 h-5 rotate-[-90deg]" />
+        </button>
       )}
 
       {/* Empty state */}
