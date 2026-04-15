@@ -6,7 +6,7 @@ import Link from "next/link";
 import {
   Sparkles, Heart, Zap, Flame, Brain, Smile, Ghost,
   Mountain, Baby, BookOpen, ArrowLeft, Loader2, Shuffle, Star, Share,
-  Calendar, HelpCircle, CheckCircle,
+  Calendar, HelpCircle, CheckCircle, Filter, ChevronDown, BarChart3,
 } from "lucide-react";
 import MovieCard, { MovieCardSkeleton } from "@/components/MovieCard";
 import { moviesAPI } from "@/lib/api";
@@ -109,14 +109,61 @@ function MoodContent() {
   const [showQuiz, setShowQuiz] = useState(false);
   const [quizStep, setQuizStep] = useState(0);
   const [quizAnswers, setQuizAnswers] = useState<string[]>([]);
-  const [quizActive, setQuizActive] = useState(false);
-  const [quizStep, setQuizStep] = useState(0);
-  const [quizAnswers, setQuizAnswers] = useState<string[]>([]);
-  const [suggestedMood, setSuggestedMood] = useState<string>("");
   const [virtualScroll, setVirtualScroll] = useState(false);
   const [scrollTop, setScrollTop] = useState(0);
-  const itemHeight = 300; // approximate height of movie card
-  const containerHeight = 800;
+  // Filtered movies based on advanced filters
+  const filteredMovies = movies.filter(movie => {
+    // Genre filter
+    if (filters.genres.length > 0) {
+      const movieGenres = movie.genres?.map(g => g.name) || [];
+      if (!filters.genres.some(genre => movieGenres.includes(genre))) {
+        return false;
+      }
+    }
+
+    // Year filter
+    if (movie.release_date) {
+      const year = new Date(movie.release_date).getFullYear();
+      if (year < filters.yearRange[0] || year > filters.yearRange[1]) {
+        return false;
+      }
+    }
+
+    // Rating filter
+    if (movie.vote_average < filters.ratingRange[0] || movie.vote_average > filters.ratingRange[1]) {
+      return false;
+    }
+
+    // Runtime filter
+    if (movie.runtime && (movie.runtime < filters.runtimeRange[0] || movie.runtime > filters.runtimeRange[1])) {
+      return false;
+    }
+
+    return true;
+  });
+
+  // Performance optimization: debounced filtering
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [searchTimeout, setSearchTimeout] = useState<NodeJS.Timeout | null>(null);
+  const [searchTerm, setSearchTerm] = useState("");
+
+  // Advanced filtering
+  const [filters, setFilters] = useState({
+    genres: [] as string[],
+    yearRange: [1900, new Date().getFullYear()] as [number, number],
+    ratingRange: [0, 10] as [number, number],
+    runtimeRange: [0, 300] as [number, number],
+  });
+  const [showFilters, setShowFilters] = useState(false);
+
+  // Mood analytics
+  const [analytics, setAnalytics] = useState({
+    totalSelections: 0,
+    popularMoods: [] as { mood: string; count: number }[],
+    averageSessionTime: 0,
+    moodTrends: [] as { date: string; mood: string }[],
+  });
+  const [showAnalytics, setShowAnalytics] = useState(false);
 
   useEffect(() => {
     if (!activeMood) return;
@@ -170,6 +217,58 @@ function MoodContent() {
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [showQuiz]);
+
+  // Performance optimization: debounced search
+  useEffect(() => {
+    if (searchTimeout) {
+      clearTimeout(searchTimeout);
+    }
+    const timeout = setTimeout(() => {
+      setDebouncedSearch(searchTerm);
+    }, 300);
+    setSearchTimeout(timeout);
+    return () => clearTimeout(timeout);
+  }, [searchTerm]);
+
+  // Mood analytics tracking
+  useEffect(() => {
+    if (activeMood) {
+      const moodStats = JSON.parse(localStorage.getItem("moodStats") || "{}");
+      const today = new Date().toISOString().split('T')[0];
+
+      // Update total selections
+      moodStats.totalSelections = (moodStats.totalSelections || 0) + 1;
+
+      // Update mood counts
+      moodStats.moodCounts = moodStats.moodCounts || {};
+      moodStats.moodCounts[activeMood] = (moodStats.moodCounts[activeMood] || 0) + 1;
+
+      // Update trends
+      moodStats.trends = moodStats.trends || [];
+      moodStats.trends.push({ date: today, mood: activeMood });
+      // Keep only last 30 days
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+      moodStats.trends = moodStats.trends.filter((t: any) =>
+        new Date(t.date) >= thirtyDaysAgo
+      );
+
+      localStorage.setItem("moodStats", JSON.stringify(moodStats));
+
+      // Update analytics state
+      const popularMoods = Object.entries(moodStats.moodCounts || {})
+        .map(([mood, count]) => ({ mood, count: count as number }))
+        .sort((a, b) => b.count - a.count)
+        .slice(0, 5);
+
+      setAnalytics({
+        totalSelections: moodStats.totalSelections,
+        popularMoods,
+        averageSessionTime: moodStats.averageSessionTime || 0,
+        moodTrends: moodStats.trends || [],
+      });
+    }
+  }, [activeMood]);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -423,6 +522,200 @@ function MoodContent() {
         })}
       </div>
 
+      {/* Advanced Filtering & Analytics */}
+      {activeMood && (
+        <div className="mb-8 space-y-4">
+          {/* Filter Toggle */}
+          <div className="flex items-center justify-between">
+            <button
+              onClick={() => setShowFilters(!showFilters)}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20 border border-white/20 text-white font-medium transition-all duration-200"
+              aria-label="Toggle advanced filters"
+            >
+              <Filter className="w-4 h-4" />
+              Advanced Filters
+              <ChevronDown className={`w-4 h-4 transition-transform ${showFilters ? 'rotate-180' : ''}`} />
+            </button>
+
+            {/* Analytics Toggle */}
+            <button
+              onClick={() => setShowAnalytics(!showAnalytics)}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20 border border-white/20 text-white font-medium transition-all duration-200"
+              aria-label="Toggle mood analytics"
+            >
+              <BarChart3 className="w-4 h-4" />
+              Analytics
+            </button>
+          </div>
+
+          {/* Advanced Filters Panel */}
+          {showFilters && (
+            <div className="bg-white/5 backdrop-blur-sm rounded-xl border border-white/10 p-6 space-y-6">
+              <h3 className="text-lg font-semibold text-white mb-4">Filter Movies</h3>
+
+              {/* Genre Filter */}
+              <div>
+                <label className="block text-sm font-medium text-white/80 mb-2">Genres</label>
+                <div className="flex flex-wrap gap-2">
+                  {Array.from(new Set(movies.flatMap(m => m.genres?.map(g => g.name) || []))).map(genre => (
+                    <button
+                      key={genre}
+                      onClick={() => {
+                        setFilters(prev => ({
+                          ...prev,
+                          genres: prev.genres.includes(genre)
+                            ? prev.genres.filter(g => g !== genre)
+                            : [...prev.genres, genre]
+                        }));
+                      }}
+                      className={`px-3 py-1 rounded-full text-xs font-medium transition-all ${
+                        filters.genres.includes(genre)
+                          ? 'bg-gold text-black'
+                          : 'bg-white/10 text-white hover:bg-white/20'
+                      }`}
+                    >
+                      {genre}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Year Range */}
+              <div>
+                <label className="block text-sm font-medium text-white/80 mb-2">
+                  Release Year: {filters.yearRange[0]} - {filters.yearRange[1]}
+                </label>
+                <input
+                  type="range"
+                  min="1900"
+                  max={new Date().getFullYear()}
+                  value={filters.yearRange[0]}
+                  onChange={(e) => setFilters(prev => ({
+                    ...prev,
+                    yearRange: [parseInt(e.target.value), prev.yearRange[1]]
+                  }))}
+                  className="w-full"
+                />
+                <input
+                  type="range"
+                  min="1900"
+                  max={new Date().getFullYear()}
+                  value={filters.yearRange[1]}
+                  onChange={(e) => setFilters(prev => ({
+                    ...prev,
+                    yearRange: [prev.yearRange[0], parseInt(e.target.value)]
+                  }))}
+                  className="w-full mt-2"
+                />
+              </div>
+
+              {/* Rating Range */}
+              <div>
+                <label className="block text-sm font-medium text-white/80 mb-2">
+                  Rating: {filters.ratingRange[0]} - {filters.ratingRange[1]}
+                </label>
+                <input
+                  type="range"
+                  min="0"
+                  max="10"
+                  step="0.1"
+                  value={filters.ratingRange[0]}
+                  onChange={(e) => setFilters(prev => ({
+                    ...prev,
+                    ratingRange: [parseFloat(e.target.value), prev.ratingRange[1]]
+                  }))}
+                  className="w-full"
+                />
+                <input
+                  type="range"
+                  min="0"
+                  max="10"
+                  step="0.1"
+                  value={filters.ratingRange[1]}
+                  onChange={(e) => setFilters(prev => ({
+                    ...prev,
+                    ratingRange: [prev.ratingRange[0], parseFloat(e.target.value)]
+                  }))}
+                  className="w-full mt-2"
+                />
+              </div>
+
+              {/* Runtime Range */}
+              <div>
+                <label className="block text-sm font-medium text-white/80 mb-2">
+                  Runtime: {filters.runtimeRange[0]} - {filters.runtimeRange[1]} min
+                </label>
+                <input
+                  type="range"
+                  min="0"
+                  max="300"
+                  value={filters.runtimeRange[0]}
+                  onChange={(e) => setFilters(prev => ({
+                    ...prev,
+                    runtimeRange: [parseInt(e.target.value), prev.runtimeRange[1]]
+                  }))}
+                  className="w-full"
+                />
+                <input
+                  type="range"
+                  min="0"
+                  max="300"
+                  value={filters.runtimeRange[1]}
+                  onChange={(e) => setFilters(prev => ({
+                    ...prev,
+                    runtimeRange: [prev.runtimeRange[0], parseInt(e.target.value)]
+                  }))}
+                  className="w-full mt-2"
+                />
+              </div>
+            </div>
+          )}
+
+          {/* Analytics Panel */}
+          {showAnalytics && (
+            <div className="bg-white/5 backdrop-blur-sm rounded-xl border border-white/10 p-6">
+              <h3 className="text-lg font-semibold text-white mb-4">Mood Analytics</h3>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-gold">{analytics.totalSelections}</div>
+                  <div className="text-sm text-white/60">Total Mood Selections</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-gold">{analytics.popularMoods.length > 0 ? analytics.popularMoods[0].mood : 'N/A'}</div>
+                  <div className="text-sm text-white/60">Most Popular Mood</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-gold">{analytics.popularMoods.length > 0 ? analytics.popularMoods[0].count : 0}</div>
+                  <div className="text-sm text-white/60">Times Selected</div>
+                </div>
+              </div>
+
+              {analytics.popularMoods.length > 1 && (
+                <div className="mt-6">
+                  <h4 className="text-md font-medium text-white mb-3">Popular Moods</h4>
+                  <div className="space-y-2">
+                    {analytics.popularMoods.slice(0, 5).map((item, index) => (
+                      <div key={item.mood} className="flex items-center justify-between">
+                        <span className="text-white/80">{MOODS.find(m => m.slug === item.mood)?.label || item.mood}</span>
+                        <div className="flex items-center gap-2">
+                          <div className="w-20 bg-white/10 rounded-full h-2">
+                            <div
+                              className="bg-gold h-2 rounded-full"
+                              style={{ width: `${(item.count / analytics.totalSelections) * 100}%` }}
+                            />
+                          </div>
+                          <span className="text-sm text-white/60 w-8 text-right">{item.count}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Results */}
       {activeMood && (
         <div className={`transition-all duration-500 ${isTransitioning ? "opacity-0 translate-y-4" : "opacity-100 translate-y-0"}`}>
@@ -600,7 +893,7 @@ function MoodContent() {
                   style={{ opacity: loading ? 0.7 : 1, transition: "opacity 300ms ease" }}
                   aria-live="polite"
                 >
-                  {movies.map((movie, i) => (
+                  {filteredMovies.map((movie, i) => (
                     <MovieCard key={movie.id || movie.tmdb_id} movie={movie} showOverview index={i} />
                   ))}
                 </div>
