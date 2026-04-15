@@ -12,6 +12,7 @@ const SORT_OPTIONS = [
   { value: "popularity.desc", label: "Popularity" },
   { value: "vote_average.desc", label: "Rating" },
   { value: "primary_release_date.desc", label: "Newest" },
+  { value: "revenue.desc", label: "Revenue" },
 ] as const;
 
 function GenreContent() {
