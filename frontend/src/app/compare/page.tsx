@@ -290,7 +290,7 @@ function CompareContent() {
           }}
         />
 
-        <div className="flex-shrink-0 pt-8">
+        <div className="flex-shrink-0 pt-8 flex flex-col items-center gap-2">
           <div className="w-12 h-12 rounded-full glass-card flex items-center justify-center">
             <ArrowLeftRight className="w-5 h-5 text-gold/50" />
           </div>
