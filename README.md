@@ -48,5 +48,9 @@ Copy the root [`.env.example`](./.env.example) to `backend/.env` and set values 
 
 The frontend uses `NEXT_PUBLIC_API_URL` (e.g. `http://localhost:8000/api`) so the browser calls the correct API base URL.
 
+## Deployment (backend)
+
+The repo includes a [`Procfile`](./Procfile) (release migrations + `gunicorn`) and [`build.sh`](./build.sh) to install Python dependencies and run `collectstatic`. On your host, set the same variables as in `.env.example`, especially `DATABASE_URL`, `DJANGO_SECRET_KEY`, `ALLOWED_HOSTS`, and `CORS_ORIGINS` pointing at your deployed frontend URL.
+
 ## TMDB API
 Get your free API key at: https://www.themoviedb.org/settings/api
