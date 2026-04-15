@@ -62,3 +62,7 @@ class RecommendationEngineMethodsTest(TestCase):
     def test_director_recommendations_filters_exclude_id(self):
         results = self.engine.get_director_recommendations(1, exclude_movie_id=100)
         self.assertIsInstance(results, list)
+
+    def test_because_you_watched_empty_for_no_history(self):
+        results = self.engine.get_because_you_watched(self.user)
+        self.assertEqual(results, {})
