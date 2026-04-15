@@ -106,6 +106,9 @@ function MoodContent() {
   const [showBackToTop, setShowBackToTop] = useState(false);
   const [themeColor, setThemeColor] = useState<string>("");
   const [isTransitioning, setIsTransitioning] = useState(false);
+  const [showQuiz, setShowQuiz] = useState(false);
+  const [quizStep, setQuizStep] = useState(0);
+  const [quizAnswers, setQuizAnswers] = useState<string[]>([]);
   const [quizActive, setQuizActive] = useState(false);
   const [quizStep, setQuizStep] = useState(0);
   const [quizAnswers, setQuizAnswers] = useState<string[]>([]);
@@ -336,6 +339,13 @@ function MoodContent() {
         >
           <Shuffle className="w-4 h-4" />
           Surprise Me
+        </button>
+        <button
+          onClick={() => setShowQuiz(true)}
+          className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-white/10 hover:bg-white/20 border border-white/20 text-white font-semibold transition-all duration-200 hover:scale-105 ml-4"
+        >
+          <HelpCircle className="w-4 h-4" />
+          Take Quiz
         </button>
       </div>
 
@@ -624,6 +634,117 @@ function MoodContent() {
         <div className="text-center py-10 text-white/20">
           <Sparkles className="w-10 h-10 mx-auto mb-3 opacity-30" />
           <p>Select a mood above to discover movies</p>
+        </div>
+      )}
+
+      {/* Mood Quiz Modal */}
+      {showQuiz && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-gradient-to-br from-slate-900/95 to-slate-800/95 rounded-2xl border border-white/10 max-w-md w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-xl font-semibold text-white flex items-center gap-2">
+                  <HelpCircle className="w-5 h-5 text-gold" />
+                  Mood Quiz
+                </h3>
+                <button
+                  onClick={() => setShowQuiz(false)}
+                  className="text-white/60 hover:text-white transition-colors"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <div className="mb-6">
+                <div className="flex items-center justify-between mb-4">
+                  <span className="text-sm text-white/60">
+                    Question {quizStep + 1} of {QUIZ_QUESTIONS.length}
+                  </span>
+                  <div className="flex gap-1">
+                    {QUIZ_QUESTIONS.map((_, index) => (
+                      <div
+                        key={index}
+                        className={`w-2 h-2 rounded-full ${
+                          index <= quizStep ? 'bg-gold' : 'bg-white/20'
+                        }`}
+                      />
+                    ))}
+                  </div>
+                </div>
+
+                <h4 className="text-lg font-medium text-white mb-4">
+                  {QUIZ_QUESTIONS[quizStep].question}
+                </h4>
+
+                <div className="space-y-2">
+                  {QUIZ_QUESTIONS[quizStep].options.map((option, index) => (
+                    <button
+                      key={index}
+                      onClick={() => {
+                        const newAnswers = [...quizAnswers];
+                        newAnswers[quizStep] = option.mood;
+                        setQuizAnswers(newAnswers);
+                      }}
+                      className={`w-full p-3 rounded-lg border text-left transition-all ${
+                        quizAnswers[quizStep] === option.mood
+                          ? 'border-gold bg-gold/10 text-gold'
+                          : 'border-white/20 bg-white/5 text-white hover:border-white/30'
+                      }`}
+                    >
+                      {option.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="flex gap-3">
+                {quizStep > 0 && (
+                  <button
+                    onClick={() => setQuizStep(quizStep - 1)}
+                    className="flex-1 px-4 py-2 rounded-lg border border-white/20 bg-white/5 text-white hover:bg-white/10 transition-colors"
+                  >
+                    Previous
+                  </button>
+                )}
+                {quizStep < QUIZ_QUESTIONS.length - 1 ? (
+                  <button
+                    onClick={() => {
+                      if (quizAnswers[quizStep]) {
+                        setQuizStep(quizStep + 1);
+                      }
+                    }}
+                    disabled={!quizAnswers[quizStep]}
+                    className="flex-1 px-4 py-2 rounded-lg bg-gold text-black font-medium hover:bg-gold/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  >
+                    Next
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => {
+                      if (quizAnswers[quizStep]) {
+                        // Calculate recommended mood based on answers
+                        const moodCounts = quizAnswers.reduce((acc, mood) => {
+                          acc[mood] = (acc[mood] || 0) + 1;
+                          return acc;
+                        }, {});
+                        const recommendedMood = Object.entries(moodCounts).reduce((a, b) =>
+                          moodCounts[a[0]] > moodCounts[b[0]] ? a : b
+                        )[0];
+                        setActiveMood(recommendedMood);
+                        setShowQuiz(false);
+                        setQuizStep(0);
+                        setQuizAnswers([]);
+                      }
+                    }}
+                    disabled={!quizAnswers[quizStep]}
+                    className="flex-1 px-4 py-2 rounded-lg bg-gold text-black font-medium hover:bg-gold/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  >
+                    Get My Mood
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
         </div>
       )}
     </div>
