@@ -427,6 +427,42 @@ function SearchContent() {
         </div>
       )}
 
+      {/* Active filter chips */}
+      {hasActiveFilters && (
+        <div className="flex flex-wrap items-center gap-2 mb-6">
+          {filterGenre && (
+            <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gold/10 border border-gold/20 text-[12px] text-gold/80">
+              {GENRE_LIST.find((g) => String(g.id) === filterGenre)?.name ?? "Genre"}
+              <button onClick={() => setFilterGenre("")} className="hover:text-gold transition-colors"><X className="w-3 h-3" /></button>
+            </span>
+          )}
+          {(filterYearFrom || filterYearTo) && (
+            <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gold/10 border border-gold/20 text-[12px] text-gold/80">
+              {filterYearFrom || "…"} – {filterYearTo || "…"}
+              <button onClick={() => { setFilterYearFrom(""); setFilterYearTo(""); }} className="hover:text-gold transition-colors"><X className="w-3 h-3" /></button>
+            </span>
+          )}
+          {filterRating && (
+            <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gold/10 border border-gold/20 text-[12px] text-gold/80">
+              ★ {filterRating}+
+              <button onClick={() => setFilterRating("")} className="hover:text-gold transition-colors"><X className="w-3 h-3" /></button>
+            </span>
+          )}
+          {filterLanguage && (
+            <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gold/10 border border-gold/20 text-[12px] text-gold/80">
+              {LANGUAGES.find((l) => l.value === filterLanguage)?.label ?? filterLanguage}
+              <button onClick={() => setFilterLanguage("")} className="hover:text-gold transition-colors"><X className="w-3 h-3" /></button>
+            </span>
+          )}
+          {(filterRuntimeMin || filterRuntimeMax) && (
+            <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gold/10 border border-gold/20 text-[12px] text-gold/80">
+              {filterRuntimeMin || "0"}–{filterRuntimeMax || "∞"} min
+              <button onClick={() => { setFilterRuntimeMin(""); setFilterRuntimeMax(""); }} className="hover:text-gold transition-colors"><X className="w-3 h-3" /></button>
+            </span>
+          )}
+        </div>
+      )}
+
       {/* Title + count */}
       <div className="flex items-center justify-between mb-8">
         <h1 className="text-3xl font-bold font-display">{pageTitle}</h1>
