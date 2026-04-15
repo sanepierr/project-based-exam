@@ -107,10 +107,12 @@ function CompareContent() {
         setMovieA(data);
         setResultsA([]);
         setSearchA("");
+        replaceCompareUrl(data, movieB);
       } else {
         setMovieB(data);
         setResultsB([]);
         setSearchB("");
+        replaceCompareUrl(movieA, data);
       }
     } catch (err) {
       console.error(err);
