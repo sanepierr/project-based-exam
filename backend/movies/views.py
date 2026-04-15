@@ -879,3 +879,76 @@ def compare_movies(request):
         )
 
     return Response({"movies": movies})
+
+
+def _detail_to_list_movie_shape(data: dict) -> dict | None:
+    """Map TMDB movie detail JSON to the shape expected by TMDBMovieSerializer."""
+    if not data or "id" not in data:
+        return None
+    genres = data.get("genres") or []
+    if genres and isinstance(genres[0], dict):
+        genre_ids = [g["id"] for g in genres]
+    else:
+        genre_ids = list(data.get("genre_ids") or [])
+    return {
+        "id": data["id"],
+        "title": data.get("title") or "",
+        "overview": (data.get("overview") or "")[:2000],
+        "release_date": data.get("release_date") or "",
+        "vote_average": float(data.get("vote_average") or 0),
+        "vote_count": int(data.get("vote_count") or 0),
+        "popularity": float(data.get("popularity") or 0),
+        "poster_path": data.get("poster_path") or "",
+        "backdrop_path": data.get("backdrop_path") or "",
+        "genre_ids": genre_ids,
+    }
+
+
+@api_view(["GET"])
+@permission_classes([AllowAny])
+def curated_collection_list(request):
+    """GET /api/movies/collections/ — metadata for all curated lists."""
+    from .curated_collections import CURATED_COLLECTIONS
+
+    results = [
+        {
+            "slug": c["slug"],
+            "title": c["title"],
+            "description": c["description"],
+            "movie_count": min(len(c["tmdb_ids"]), 24),
+        }
+        for c in CURATED_COLLECTIONS
+    ]
+    return Response({"results": results})
+
+
+@api_view(["GET"])
+@permission_classes([AllowAny])
+def curated_collection_detail(request, slug):
+    """GET /api/movies/collections/<slug>/ — movies in one curated list (TMDB, capped)."""
+    from .curated_collections import CURATED_COLLECTIONS
+
+    col = next((c for c in CURATED_COLLECTIONS if c["slug"] == slug), None)
+    if not col:
+        return Response(
+            {"error": "Collection not found"},
+            status=status.HTTP_404_NOT_FOUND,
+        )
+
+    cap = 24
+    movies_raw = []
+    for tmdb_id in col["tmdb_ids"][:cap]:
+        data = tmdb.get_movie_details(tmdb_id)
+        row = _detail_to_list_movie_shape(data)
+        if row:
+            movies_raw.append(row)
+
+    serializer = TMDBMovieSerializer(movies_raw, many=True)
+    return Response(
+        {
+            "slug": col["slug"],
+            "title": col["title"],
+            "description": col["description"],
+            "results": serializer.data,
+        }
+    )
