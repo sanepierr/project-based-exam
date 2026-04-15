@@ -40,6 +40,10 @@ function MoodContent() {
   const [totalResults, setTotalResults] = useState(0);
 
   useEffect(() => {
+    document.title = activeMood && moodInfo ? `${moodInfo.label} Movies - CineQuest` : "Mood Picker - CineQuest";
+  }, [activeMood, moodInfo]);
+
+  useEffect(() => {
     if (!activeMood) return;
     fetchMoodMovies(activeMood, 1);
   }, [activeMood]);
@@ -64,7 +68,12 @@ function MoodContent() {
   }
 
   return (
-    <div className="pt-24 pb-20 px-6 md:px-10 lg:px-20 max-w-[1440px] mx-auto">
+    <div className="pt-24 pb-20 px-6 md:px-10 lg:px-20 max-w-[1440px] mx-auto relative">
+      <Link href="/dashboard" className="absolute top-6 left-6 md:top-10 md:left-10 z-10 inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-colors text-white/70 text-sm font-medium">
+        <ArrowLeft className="w-4 h-4" />
+        <span className="hidden sm:inline">Back to Dashboard</span>
+      </Link>
+
       {/* Header */}
       <div className="text-center mb-12">
         <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-gold/10 border border-gold/15 mb-5">
@@ -91,7 +100,7 @@ function MoodContent() {
               key={mood.slug}
               onClick={() => { if (!isActive) router.push(`/mood?mood=${mood.slug}`) }}
               className={`genre-card glass-card group relative overflow-hidden rounded-xl p-5 text-center transition-all duration-300 ${
-                isActive ? "ring-2 ring-gold/40 scale-[1.03]" : ""
+                isActive ? "ring-2 ring-gold/40 scale-[1.03] shadow-[0_0_20px_rgba(234,179,8,0.25)]" : ""
               }`}
             >
               <div className={`absolute inset-0 bg-gradient-to-br ${mood.color} ${isActive ? "opacity-100" : "opacity-0 group-hover:opacity-100"} transition-opacity duration-500`} />
@@ -115,7 +124,7 @@ function MoodContent() {
               <div>
                 <div className="flex items-center gap-4">
                   <h2 className="text-2xl font-bold font-display">{moodInfo.label}</h2>
-                  <button onClick={() => router.push('/mood')} className="text-xs px-3 py-1.5 rounded-lg border border-white/10 hover:bg-white/5 transition-colors text-white/40">Clear</button>
+                  <button onClick={() => router.push('/mood')} className="text-xs px-3 py-1.5 rounded-lg border border-white/10 hover:bg-white/10 transition-all active:scale-95 text-white/60 hover:text-white">Clear</button>
                 </div>
                 <p className="text-sm text-white/30 mt-0.5">{moodInfo.description}</p>
                 {totalResults > 0 && <span className="inline-block mt-2 text-[11px] px-2 py-1 bg-white/5 rounded-md text-white/40">{totalResults} titles found</span>}
@@ -133,33 +142,46 @@ function MoodContent() {
               </button>
             </div>
           ) : loading ? (
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-5">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-5 opacity-80 animate-pulse">
               {renderSkeletons()}
+            </div>
+          ) : movies.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-20 text-center glass-card rounded-2xl border border-white/5 animate-in fade-in duration-500">
+              <span className="opacity-40 mb-4 inline-block">
+                 <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="m15 11-4 4"/><path d="m11 11 4 4"/><circle cx="12" cy="12" r="10"/></svg>
+              </span>
+              <h3 className="text-xl font-display font-medium text-white/90 mb-2">No movies found</h3>
+              <p className="text-sm text-white/40 mb-6">We couldn&apos;t find any movies perfectly matching your mood right now.</p>
+              <button type="button" onClick={() => router.push('/mood')} className="px-6 py-2.5 rounded-xl bg-white/5 text-white/60 text-sm font-medium hover:bg-white/10 hover:text-white transition-colors">
+                Clear Mood
+              </button>
             </div>
           ) : (
             <>
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-5">
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-5 animate-in fade-in slide-in-from-bottom-4 duration-700">
                 {movies.map((movie, i) => (
                   <MovieCard key={movie.id || movie.tmdb_id} movie={movie} showOverview index={i} />
                 ))}
               </div>
 
               {totalPages > 1 && (
-                <div className="flex items-center justify-center gap-3 mt-12">
+                <div className="flex items-center justify-center gap-3 mt-12 animate-in fade-in duration-700 delay-300">
                   <button
                     onClick={() => fetchMoodMovies(activeMood, page - 1)}
                     disabled={page <= 1}
-                    className="px-5 py-2.5 rounded-xl glass-card text-sm font-medium disabled:opacity-20 hover:bg-white/5 transition-all active:scale-95"
+                    className="px-5 py-2.5 rounded-xl glass-card text-sm font-medium disabled:opacity-20 hover:bg-white/5 transition-all active:scale-95 flex items-center gap-2"
                   >
-                    Previous
+                    <ArrowLeft className="w-4 h-4" /> Previous
                   </button>
-                  <span className="text-sm text-white/30 font-mono px-4">{page} / {Math.min(totalPages, 500)}</span>
+                  <span className="text-sm text-white/40 font-mono px-4">
+                    Page <span className="text-gold font-semibold">{page}</span> of {Math.min(totalPages, 500)}
+                  </span>
                   <button
                     onClick={() => fetchMoodMovies(activeMood, page + 1)}
                     disabled={page >= totalPages}
-                    className="px-5 py-2.5 rounded-xl glass-card text-sm font-medium disabled:opacity-20 hover:bg-white/5 transition-all active:scale-95"
+                    className="px-5 py-2.5 rounded-xl glass-card text-sm font-medium disabled:opacity-20 hover:bg-white/5 transition-all active:scale-95 flex items-center gap-2"
                   >
-                    Next
+                    Next <ArrowLeft className="w-4 h-4 rotate-180" />
                   </button>
                 </div>
               )}
