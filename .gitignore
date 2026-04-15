@@ -30,3 +30,6 @@ Thumbs.db
 
 # Local assignment patches / prompts (keep out of repo unless you choose to add)
 commits/
+
+# Full copy of solo / deployed tree for porting — never commit
+describeFeatureImplemented/
