@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, Suspense } from "react";
+import { useState, useEffect, useRef, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import {
@@ -155,8 +155,8 @@ function MoodContent() {
 
   // Performance optimization: debounced filtering
   const [debouncedSearch, setDebouncedSearch] = useState("");
-  const [searchTimeout, setSearchTimeout] = useState<NodeJS.Timeout | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
+  const debouncedSearchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const [showFilters, setShowFilters] = useState(false);
 
@@ -225,14 +225,17 @@ function MoodContent() {
 
   // Performance optimization: debounced search
   useEffect(() => {
-    if (searchTimeout) {
-      clearTimeout(searchTimeout);
+    if (debouncedSearchTimeoutRef.current) {
+      clearTimeout(debouncedSearchTimeoutRef.current);
     }
-    const timeout = setTimeout(() => {
+    debouncedSearchTimeoutRef.current = setTimeout(() => {
       setDebouncedSearch(searchTerm);
     }, 300);
-    setSearchTimeout(timeout);
-    return () => clearTimeout(timeout);
+    return () => {
+      if (debouncedSearchTimeoutRef.current) {
+        clearTimeout(debouncedSearchTimeoutRef.current);
+      }
+    };
   }, [searchTerm]);
 
   // Mood analytics tracking
