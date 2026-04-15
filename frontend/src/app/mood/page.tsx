@@ -6,6 +6,7 @@ import Link from "next/link";
 import {
   Sparkles, Heart, Zap, Flame, Brain, Smile, Ghost,
   Mountain, Baby, BookOpen, ArrowLeft, Loader2, Shuffle, Star, Share,
+  Calendar, HelpCircle, CheckCircle, Filter, ChevronDown, BarChart3,
 } from "lucide-react";
 import MovieCard, { MovieCardSkeleton } from "@/components/MovieCard";
 import { moviesAPI } from "@/lib/api";
@@ -37,6 +38,48 @@ const MOOD_RECOMMENDATIONS: Record<string, string[]> = {
   "documentary-deep-dive": ["mind-bender", "cry-it-out"],
 };
 
+const QUIZ_QUESTIONS = [
+  {
+    question: "How are you feeling right now?",
+    options: [
+      { label: "Happy & energetic", mood: "feel-good" },
+      { label: "Sad or emotional", mood: "cry-it-out" },
+      { label: "Excited & adventurous", mood: "adrenaline" },
+      { label: "Relaxed & cozy", mood: "cozy-night" },
+      { label: "Curious & thoughtful", mood: "mind-bender" },
+      { label: "Scared or suspenseful", mood: "edge-of-seat" },
+    ],
+  },
+  {
+    question: "What kind of movie experience do you want?",
+    options: [
+      { label: "Light-hearted comedy", mood: "feel-good" },
+      { label: "Heart-pounding action", mood: "adrenaline" },
+      { label: "Romantic & sweet", mood: "date-night" },
+      { label: "Deep & meaningful", mood: "cry-it-out" },
+      { label: "Mind-bending plot", mood: "mind-bender" },
+      { label: "Family-friendly fun", mood: "family-fun" },
+    ],
+  },
+  {
+    question: "What's your preferred movie length?",
+    options: [
+      { label: "Short & sweet (under 2 hours)", mood: "feel-good" },
+      { label: "Epic & long (over 2 hours)", mood: "epic-adventure" },
+      { label: "Classic runtime (1.5-2 hours)", mood: "cozy-night" },
+      { label: "Doesn't matter", mood: "documentary-deep-dive" },
+    ],
+  },
+];
+
+function getSuggestedMoodByTime(): string {
+  const hour = new Date().getHours();
+  if (hour >= 6 && hour < 12) return "feel-good"; // Morning - uplifting
+  if (hour >= 12 && hour < 18) return "epic-adventure"; // Afternoon - adventurous
+  if (hour >= 18 && hour < 22) return "cozy-night"; // Evening - cozy
+  return "edge-of-seat"; // Night - suspenseful
+}
+
 function MoodContent() {
   const renderSkeletons = () => Array.from({ length: 18 }).map((_, i) => <MovieCardSkeleton key={i} />);
 
@@ -62,9 +105,69 @@ function MoodContent() {
   const [focusedIndex, setFocusedIndex] = useState<number>(-1);
   const [showBackToTop, setShowBackToTop] = useState(false);
   const [themeColor, setThemeColor] = useState<string>("");
+  const [isTransitioning, setIsTransitioning] = useState(false);
+  const [showQuiz, setShowQuiz] = useState(false);
+  const [quizStep, setQuizStep] = useState(0);
+  const [quizAnswers, setQuizAnswers] = useState<string[]>([]);
+  const [virtualScroll, setVirtualScroll] = useState(false);
+  const [scrollTop, setScrollTop] = useState(0);
+  // Filtered movies based on advanced filters
+  const filteredMovies = movies.filter(movie => {
+    // Genre filter
+    if (filters.genres.length > 0) {
+      const movieGenres = movie.genres?.map(g => g.name) || [];
+      if (!filters.genres.some(genre => movieGenres.includes(genre))) {
+        return false;
+      }
+    }
+
+    // Year filter
+    if (movie.release_date) {
+      const year = new Date(movie.release_date).getFullYear();
+      if (year < filters.yearRange[0] || year > filters.yearRange[1]) {
+        return false;
+      }
+    }
+
+    // Rating filter
+    if (movie.vote_average < filters.ratingRange[0] || movie.vote_average > filters.ratingRange[1]) {
+      return false;
+    }
+
+    // Runtime filter
+    if (movie.runtime && (movie.runtime < filters.runtimeRange[0] || movie.runtime > filters.runtimeRange[1])) {
+      return false;
+    }
+
+    return true;
+  });
+
+  // Performance optimization: debounced filtering
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [searchTimeout, setSearchTimeout] = useState<NodeJS.Timeout | null>(null);
+  const [searchTerm, setSearchTerm] = useState("");
+
+  // Advanced filtering
+  const [filters, setFilters] = useState({
+    genres: [] as string[],
+    yearRange: [1900, new Date().getFullYear()] as [number, number],
+    ratingRange: [0, 10] as [number, number],
+    runtimeRange: [0, 300] as [number, number],
+  });
+  const [showFilters, setShowFilters] = useState(false);
+
+  // Mood analytics
+  const [analytics, setAnalytics] = useState({
+    totalSelections: 0,
+    popularMoods: [] as { mood: string; count: number }[],
+    averageSessionTime: 0,
+    moodTrends: [] as { date: string; mood: string }[],
+  });
+  const [showAnalytics, setShowAnalytics] = useState(false);
 
   useEffect(() => {
     if (!activeMood) return;
+    setIsTransitioning(true);
     fetchMoodMovies(activeMood, 1);
     setHistory((currentHistory) => {
       const newHistory = [activeMood, ...currentHistory.filter(h => h !== activeMood)].slice(0, 5);
@@ -73,6 +176,7 @@ function MoodContent() {
     });
     const recommendedSlugs = MOOD_RECOMMENDATIONS[activeMood] || [];
     setRecommended(MOODS.filter((m) => recommendedSlugs.includes(m.slug)));
+    setTimeout(() => setIsTransitioning(false), 300);
   }, [activeMood]);
 
   useEffect(() => {
@@ -102,6 +206,70 @@ function MoodContent() {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [focusedIndex, router]);
 
+  // Modal keyboard handling
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (!showQuiz) return;
+      if (e.key === "Escape") {
+        setShowQuiz(false);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [showQuiz]);
+
+  // Performance optimization: debounced search
+  useEffect(() => {
+    if (searchTimeout) {
+      clearTimeout(searchTimeout);
+    }
+    const timeout = setTimeout(() => {
+      setDebouncedSearch(searchTerm);
+    }, 300);
+    setSearchTimeout(timeout);
+    return () => clearTimeout(timeout);
+  }, [searchTerm]);
+
+  // Mood analytics tracking
+  useEffect(() => {
+    if (activeMood) {
+      const moodStats = JSON.parse(localStorage.getItem("moodStats") || "{}");
+      const today = new Date().toISOString().split('T')[0];
+
+      // Update total selections
+      moodStats.totalSelections = (moodStats.totalSelections || 0) + 1;
+
+      // Update mood counts
+      moodStats.moodCounts = moodStats.moodCounts || {};
+      moodStats.moodCounts[activeMood] = (moodStats.moodCounts[activeMood] || 0) + 1;
+
+      // Update trends
+      moodStats.trends = moodStats.trends || [];
+      moodStats.trends.push({ date: today, mood: activeMood });
+      // Keep only last 30 days
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+      moodStats.trends = moodStats.trends.filter((t: any) =>
+        new Date(t.date) >= thirtyDaysAgo
+      );
+
+      localStorage.setItem("moodStats", JSON.stringify(moodStats));
+
+      // Update analytics state
+      const popularMoods = Object.entries(moodStats.moodCounts || {})
+        .map(([mood, count]) => ({ mood, count: count as number }))
+        .sort((a, b) => b.count - a.count)
+        .slice(0, 5);
+
+      setAnalytics({
+        totalSelections: moodStats.totalSelections,
+        popularMoods,
+        averageSessionTime: moodStats.averageSessionTime || 0,
+        moodTrends: moodStats.trends || [],
+      });
+    }
+  }, [activeMood]);
+
   useEffect(() => {
     const handleScroll = () => {
       setShowBackToTop(window.scrollY > 300);
@@ -111,10 +279,7 @@ function MoodContent() {
   }, []);
 
   useEffect(() => {
-    const saved = localStorage.getItem("moodFavorites");
-    if (saved) setFavorites(JSON.parse(saved));
-    const savedHistory = localStorage.getItem("moodHistory");
-    if (savedHistory) setHistory(JSON.parse(savedHistory));
+    setSuggestedMood(getSuggestedMoodByTime());
   }, []);
 
   async function fetchMoodMovies(slug: string, p: number, sort?: string, append = false) {
@@ -144,6 +309,9 @@ function MoodContent() {
         .slice(0, 3)
         .map(([name]) => name);
       setStats({ averageRating: Number(averageRating.toFixed(1)), topGenres });
+
+      // Enable virtual scroll for large result sets
+      setVirtualScroll(nextMovies.length > 100);
     } catch (err) {
       console.error(err);
       setError("Failed to load movies. Please try again.");
@@ -156,8 +324,30 @@ function MoodContent() {
     }
   }
 
+  function handleQuizAnswer(answer: string) {
+    const newAnswers = [...quizAnswers, answer];
+    setQuizAnswers(newAnswers);
+
+    if (quizStep < QUIZ_QUESTIONS.length - 1) {
+      setQuizStep(quizStep + 1);
+    } else {
+      // Determine mood based on answers
+      const moodCounts: Record<string, number> = {};
+      newAnswers.forEach((mood) => {
+        moodCounts[mood] = (moodCounts[mood] || 0) + 1;
+      });
+      const selectedMood = Object.entries(moodCounts).sort((a, b) => b[1] - a[1])[0][0];
+      setQuizActive(false);
+      setQuizStep(0);
+      setQuizAnswers([]);
+      setToastMessage(`Quiz result: ${MOODS.find(m => m.slug === selectedMood)?.label}`);
+      setTimeout(() => setToastMessage(""), 3000);
+      router.push(`/mood?mood=${selectedMood}`);
+    }
+  }
+
   return (
-    <div className={`pt-24 pb-20 px-6 md:px-10 lg:px-20 max-w-[1440px] mx-auto transition-all duration-500 ${themeColor ? `bg-gradient-to-br ${themeColor}` : ""}`}>
+    <div className={`pt-24 pb-20 px-6 md:px-10 lg:px-20 max-w-[1440px] mx-auto transition-all duration-500 ${themeColor ? `bg-gradient-to-br ${themeColor}` : ""} ${isTransitioning ? "opacity-50 scale-95" : "opacity-100 scale-100"}`}>
       {/* Toast */}
       {toastMessage && (
         <div
@@ -185,6 +375,68 @@ function MoodContent() {
         </p>
       </div>
 
+      {/* Mood quiz */}
+      {quizActive && (
+        <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-6">
+          <div className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl p-8 max-w-md w-full">
+            <div className="flex items-center gap-3 mb-6">
+              <HelpCircle className="w-6 h-6 text-gold" />
+              <h3 className="text-xl font-bold">Mood Quiz</h3>
+            </div>
+            <div className="mb-6">
+              <div className="flex justify-between text-sm text-white/50 mb-2">
+                <span>Question {quizStep + 1} of {QUIZ_QUESTIONS.length}</span>
+                <span>{Math.round(((quizStep + 1) / QUIZ_QUESTIONS.length) * 100)}%</span>
+              </div>
+              <div className="w-full bg-white/10 rounded-full h-1">
+                <div
+                  className="bg-gold h-1 rounded-full transition-all duration-300"
+                  style={{ width: `${((quizStep + 1) / QUIZ_QUESTIONS.length) * 100}%` }}
+                />
+              </div>
+            </div>
+            <h4 className="text-lg font-semibold mb-4">{QUIZ_QUESTIONS[quizStep].question}</h4>
+            <div className="space-y-3">
+              {QUIZ_QUESTIONS[quizStep].options.map((option, i) => (
+                <button
+                  key={i}
+                  onClick={() => handleQuizAnswer(option.mood)}
+                  className="w-full text-left p-4 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 hover:border-gold/30 transition-all duration-200"
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
+            <button
+              onClick={() => {
+                setQuizActive(false);
+                setQuizStep(0);
+                setQuizAnswers([]);
+              }}
+              className="w-full mt-6 py-2 text-sm text-white/50 hover:text-white transition-colors"
+            >
+              Skip quiz
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Suggested mood by time */}
+      {suggestedMood && !activeMood && (
+        <div className="flex justify-center mb-6">
+          <div className="inline-flex items-center gap-3 px-4 py-2 rounded-xl bg-gold/10 border border-gold/20">
+            <Calendar className="w-4 h-4 text-gold" />
+            <span className="text-sm text-gold font-medium">Suggested for now:</span>
+            <button
+              onClick={() => router.push(`/mood?mood=${suggestedMood}`)}
+              className="text-sm text-white hover:text-gold transition-colors"
+            >
+              {MOODS.find(m => m.slug === suggestedMood)?.label}
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Surprise Me Button */}
       <div className="flex justify-center mb-8">
         <button
@@ -195,9 +447,40 @@ function MoodContent() {
             router.push(`/mood?mood=${randomMood.slug}`);
           }}
           className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-gold/10 hover:bg-gold/20 border border-gold/20 text-gold font-semibold transition-all duration-200 hover:scale-105"
+          aria-label="Select a random mood for you"
         >
           <Shuffle className="w-4 h-4" />
           Surprise Me
+        </button>
+        <button
+          onClick={() => setShowQuiz(true)}
+          className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-white/10 hover:bg-white/20 border border-white/20 text-white font-semibold transition-all duration-200 hover:scale-105 ml-4"
+          aria-label="Take an interactive mood quiz to find your perfect mood"
+        >
+          <HelpCircle className="w-4 h-4" />
+          Take Quiz
+        </button>
+        <button
+          onClick={() => {
+            const suggestedMood = getSuggestedMoodByTime();
+            setActiveMood(suggestedMood);
+          }}
+          className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-white/10 hover:bg-white/20 border border-white/20 text-white font-semibold transition-all duration-200 hover:scale-105 ml-4"
+          aria-label="Get a mood suggestion based on the current time of day"
+        >
+          <Calendar className="w-4 h-4" />
+          Time-Based Mood
+        </button>
+      </div>
+
+      {/* Take Quiz Button */}
+      <div className="flex justify-center mb-8">
+        <button
+          onClick={() => setQuizActive(true)}
+          className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-white/10 hover:bg-white/20 border border-white/20 text-white font-semibold transition-all duration-200 hover:scale-105"
+        >
+          <HelpCircle className="w-4 h-4" />
+          Take Mood Quiz
         </button>
       </div>
 
@@ -239,9 +522,203 @@ function MoodContent() {
         })}
       </div>
 
+      {/* Advanced Filtering & Analytics */}
+      {activeMood && (
+        <div className="mb-8 space-y-4">
+          {/* Filter Toggle */}
+          <div className="flex items-center justify-between">
+            <button
+              onClick={() => setShowFilters(!showFilters)}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20 border border-white/20 text-white font-medium transition-all duration-200"
+              aria-label="Toggle advanced filters"
+            >
+              <Filter className="w-4 h-4" />
+              Advanced Filters
+              <ChevronDown className={`w-4 h-4 transition-transform ${showFilters ? 'rotate-180' : ''}`} />
+            </button>
+
+            {/* Analytics Toggle */}
+            <button
+              onClick={() => setShowAnalytics(!showAnalytics)}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20 border border-white/20 text-white font-medium transition-all duration-200"
+              aria-label="Toggle mood analytics"
+            >
+              <BarChart3 className="w-4 h-4" />
+              Analytics
+            </button>
+          </div>
+
+          {/* Advanced Filters Panel */}
+          {showFilters && (
+            <div className="bg-white/5 backdrop-blur-sm rounded-xl border border-white/10 p-6 space-y-6">
+              <h3 className="text-lg font-semibold text-white mb-4">Filter Movies</h3>
+
+              {/* Genre Filter */}
+              <div>
+                <label className="block text-sm font-medium text-white/80 mb-2">Genres</label>
+                <div className="flex flex-wrap gap-2">
+                  {Array.from(new Set(movies.flatMap(m => m.genres?.map(g => g.name) || []))).map(genre => (
+                    <button
+                      key={genre}
+                      onClick={() => {
+                        setFilters(prev => ({
+                          ...prev,
+                          genres: prev.genres.includes(genre)
+                            ? prev.genres.filter(g => g !== genre)
+                            : [...prev.genres, genre]
+                        }));
+                      }}
+                      className={`px-3 py-1 rounded-full text-xs font-medium transition-all ${
+                        filters.genres.includes(genre)
+                          ? 'bg-gold text-black'
+                          : 'bg-white/10 text-white hover:bg-white/20'
+                      }`}
+                    >
+                      {genre}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Year Range */}
+              <div>
+                <label className="block text-sm font-medium text-white/80 mb-2">
+                  Release Year: {filters.yearRange[0]} - {filters.yearRange[1]}
+                </label>
+                <input
+                  type="range"
+                  min="1900"
+                  max={new Date().getFullYear()}
+                  value={filters.yearRange[0]}
+                  onChange={(e) => setFilters(prev => ({
+                    ...prev,
+                    yearRange: [parseInt(e.target.value), prev.yearRange[1]]
+                  }))}
+                  className="w-full"
+                />
+                <input
+                  type="range"
+                  min="1900"
+                  max={new Date().getFullYear()}
+                  value={filters.yearRange[1]}
+                  onChange={(e) => setFilters(prev => ({
+                    ...prev,
+                    yearRange: [prev.yearRange[0], parseInt(e.target.value)]
+                  }))}
+                  className="w-full mt-2"
+                />
+              </div>
+
+              {/* Rating Range */}
+              <div>
+                <label className="block text-sm font-medium text-white/80 mb-2">
+                  Rating: {filters.ratingRange[0]} - {filters.ratingRange[1]}
+                </label>
+                <input
+                  type="range"
+                  min="0"
+                  max="10"
+                  step="0.1"
+                  value={filters.ratingRange[0]}
+                  onChange={(e) => setFilters(prev => ({
+                    ...prev,
+                    ratingRange: [parseFloat(e.target.value), prev.ratingRange[1]]
+                  }))}
+                  className="w-full"
+                />
+                <input
+                  type="range"
+                  min="0"
+                  max="10"
+                  step="0.1"
+                  value={filters.ratingRange[1]}
+                  onChange={(e) => setFilters(prev => ({
+                    ...prev,
+                    ratingRange: [prev.ratingRange[0], parseFloat(e.target.value)]
+                  }))}
+                  className="w-full mt-2"
+                />
+              </div>
+
+              {/* Runtime Range */}
+              <div>
+                <label className="block text-sm font-medium text-white/80 mb-2">
+                  Runtime: {filters.runtimeRange[0]} - {filters.runtimeRange[1]} min
+                </label>
+                <input
+                  type="range"
+                  min="0"
+                  max="300"
+                  value={filters.runtimeRange[0]}
+                  onChange={(e) => setFilters(prev => ({
+                    ...prev,
+                    runtimeRange: [parseInt(e.target.value), prev.runtimeRange[1]]
+                  }))}
+                  className="w-full"
+                />
+                <input
+                  type="range"
+                  min="0"
+                  max="300"
+                  value={filters.runtimeRange[1]}
+                  onChange={(e) => setFilters(prev => ({
+                    ...prev,
+                    runtimeRange: [prev.runtimeRange[0], parseInt(e.target.value)]
+                  }))}
+                  className="w-full mt-2"
+                />
+              </div>
+            </div>
+          )}
+
+          {/* Analytics Panel */}
+          {showAnalytics && (
+            <div className="bg-white/5 backdrop-blur-sm rounded-xl border border-white/10 p-6">
+              <h3 className="text-lg font-semibold text-white mb-4">Mood Analytics</h3>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-gold">{analytics.totalSelections}</div>
+                  <div className="text-sm text-white/60">Total Mood Selections</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-gold">{analytics.popularMoods.length > 0 ? analytics.popularMoods[0].mood : 'N/A'}</div>
+                  <div className="text-sm text-white/60">Most Popular Mood</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-gold">{analytics.popularMoods.length > 0 ? analytics.popularMoods[0].count : 0}</div>
+                  <div className="text-sm text-white/60">Times Selected</div>
+                </div>
+              </div>
+
+              {analytics.popularMoods.length > 1 && (
+                <div className="mt-6">
+                  <h4 className="text-md font-medium text-white mb-3">Popular Moods</h4>
+                  <div className="space-y-2">
+                    {analytics.popularMoods.slice(0, 5).map((item, index) => (
+                      <div key={item.mood} className="flex items-center justify-between">
+                        <span className="text-white/80">{MOODS.find(m => m.slug === item.mood)?.label || item.mood}</span>
+                        <div className="flex items-center gap-2">
+                          <div className="w-20 bg-white/10 rounded-full h-2">
+                            <div
+                              className="bg-gold h-2 rounded-full"
+                              style={{ width: `${(item.count / analytics.totalSelections) * 100}%` }}
+                            />
+                          </div>
+                          <span className="text-sm text-white/60 w-8 text-right">{item.count}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Results */}
       {activeMood && (
-        <div>
+        <div className={`transition-all duration-500 ${isTransitioning ? "opacity-0 translate-y-4" : "opacity-100 translate-y-0"}`}>
           {moodInfo && (
             <div className="flex flex-col gap-5 mb-8">
               <div className="flex items-start justify-between gap-6 flex-wrap">
@@ -381,15 +858,46 @@ function MoodContent() {
             </div>
           ) : (
             <>
-              <div
-                className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-5"
-                style={{ opacity: loading ? 0.7 : 1, transition: "opacity 300ms ease" }}
-                aria-live="polite"
-              >
-                {movies.map((movie, i) => (
-                  <MovieCard key={movie.id || movie.tmdb_id} movie={movie} showOverview index={i} />
-                ))}
-              </div>
+          ) : (
+            <>
+              {virtualScroll ? (
+                <div
+                  className="relative overflow-auto"
+                  style={{ height: containerHeight }}
+                  onScroll={(e) => setScrollTop(e.currentTarget.scrollTop)}
+                >
+                  <div style={{ height: movies.length * itemHeight, position: 'relative' }}>
+                    {movies
+                      .slice(
+                        Math.floor(scrollTop / itemHeight),
+                        Math.floor(scrollTop / itemHeight) + Math.ceil(containerHeight / itemHeight) + 5
+                      )
+                      .map((movie, i) => (
+                        <div
+                          key={movie.id || movie.tmdb_id}
+                          style={{
+                            position: 'absolute',
+                            top: (Math.floor(scrollTop / itemHeight) + i) * itemHeight,
+                            left: 0,
+                            width: '100%',
+                          }}
+                        >
+                          <MovieCard movie={movie} showOverview index={Math.floor(scrollTop / itemHeight) + i} />
+                        </div>
+                      ))}
+                  </div>
+                </div>
+              ) : (
+                <div
+                  className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-5"
+                  style={{ opacity: loading ? 0.7 : 1, transition: "opacity 300ms ease" }}
+                  aria-live="polite"
+                >
+                  {filteredMovies.map((movie, i) => (
+                    <MovieCard key={movie.id || movie.tmdb_id} movie={movie} showOverview index={i} />
+                  ))}
+                </div>
+              )}
 
               {totalPages > 1 && !infiniteScroll && (
                 <div className="flex items-center justify-center gap-3 mt-12">
@@ -444,6 +952,125 @@ function MoodContent() {
         <div className="text-center py-10 text-white/20">
           <Sparkles className="w-10 h-10 mx-auto mb-3 opacity-30" />
           <p>Select a mood above to discover movies</p>
+        </div>
+      )}
+
+      {/* Mood Quiz Modal */}
+      {showQuiz && (
+        <div
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="quiz-title"
+        >
+          <div className="bg-gradient-to-br from-slate-900/95 to-slate-800/95 rounded-2xl border border-white/10 max-w-md w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-6">
+                <h3 id="quiz-title" className="text-xl font-semibold text-white flex items-center gap-2">
+                  <HelpCircle className="w-5 h-5 text-gold" />
+                  Mood Quiz
+                </h3>
+                <button
+                  onClick={() => setShowQuiz(false)}
+                  className="text-white/60 hover:text-white transition-colors"
+                  aria-label="Close mood quiz"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <div className="mb-6">
+                <div className="flex items-center justify-between mb-4">
+                  <span className="text-sm text-white/60">
+                    Question {quizStep + 1} of {QUIZ_QUESTIONS.length}
+                  </span>
+                  <div className="flex gap-1">
+                    {QUIZ_QUESTIONS.map((_, index) => (
+                      <div
+                        key={index}
+                        className={`w-2 h-2 rounded-full ${
+                          index <= quizStep ? 'bg-gold' : 'bg-white/20'
+                        }`}
+                      />
+                    ))}
+                  </div>
+                </div>
+
+                <h4 className="text-lg font-medium text-white mb-4">
+                  {QUIZ_QUESTIONS[quizStep].question}
+                </h4>
+
+                <div className="space-y-2">
+                  {QUIZ_QUESTIONS[quizStep].options.map((option, index) => (
+                    <button
+                      key={index}
+                      autoFocus={index === 0}
+                      onClick={() => {
+                        const newAnswers = [...quizAnswers];
+                        newAnswers[quizStep] = option.mood;
+                        setQuizAnswers(newAnswers);
+                      }}
+                      className={`w-full p-3 rounded-lg border text-left transition-all ${
+                        quizAnswers[quizStep] === option.mood
+                          ? 'border-gold bg-gold/10 text-gold'
+                          : 'border-white/20 bg-white/5 text-white hover:border-white/30'
+                      }`}
+                      aria-pressed={quizAnswers[quizStep] === option.mood}
+                    >
+                      {option.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="flex gap-3">
+                {quizStep > 0 && (
+                  <button
+                    onClick={() => setQuizStep(quizStep - 1)}
+                    className="flex-1 px-4 py-2 rounded-lg border border-white/20 bg-white/5 text-white hover:bg-white/10 transition-colors"
+                  >
+                    Previous
+                  </button>
+                )}
+                {quizStep < QUIZ_QUESTIONS.length - 1 ? (
+                  <button
+                    onClick={() => {
+                      if (quizAnswers[quizStep]) {
+                        setQuizStep(quizStep + 1);
+                      }
+                    }}
+                    disabled={!quizAnswers[quizStep]}
+                    className="flex-1 px-4 py-2 rounded-lg bg-gold text-black font-medium hover:bg-gold/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  >
+                    Next
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => {
+                      if (quizAnswers[quizStep]) {
+                        // Calculate recommended mood based on answers
+                        const moodCounts = quizAnswers.reduce((acc, mood) => {
+                          acc[mood] = (acc[mood] || 0) + 1;
+                          return acc;
+                        }, {});
+                        const recommendedMood = Object.entries(moodCounts).reduce((a, b) =>
+                          moodCounts[a[0]] > moodCounts[b[0]] ? a : b
+                        )[0];
+                        setActiveMood(recommendedMood);
+                        setShowQuiz(false);
+                        setQuizStep(0);
+                        setQuizAnswers([]);
+                      }
+                    }}
+                    disabled={!quizAnswers[quizStep]}
+                    className="flex-1 px-4 py-2 rounded-lg bg-gold text-black font-medium hover:bg-gold/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  >
+                    Get My Mood
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
         </div>
       )}
     </div>
