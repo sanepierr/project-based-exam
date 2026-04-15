@@ -1,0 +1,145 @@
+diff --git a/frontend/src/app/page.tsx b/frontend/src/app/page.tsx
+index 11f4930..1ee7147 100644
+--- a/frontend/src/app/page.tsx
++++ b/frontend/src/app/page.tsx
+@@ -1,7 +1,7 @@
+ "use client";
+ 
+ import { useState, useEffect } from "react";
+-import { TrendingUp, Star, Clapperboard, Flame, Crown } from "lucide-react";
++import { Star, Clapperboard, Flame, Crown } from "lucide-react";
+ import MovieCarousel from "@/components/MovieCarousel";
+ import GenreGrid from "@/components/GenreGrid";
+ import HeroSection from "@/components/HeroSection";
+@@ -11,7 +11,7 @@ import { moviesAPI } from "@/lib/api";
+ import type { MovieCompact } from "@/types/movie";
+ 
+ export default function HomePage() {
+-  const [trending, setTrending] = useState<any>({});
++  const [trending, setTrending] = useState<MovieCompact[]>([]);
+   const [nowPlaying, setNowPlaying] = useState<MovieCompact[]>([]);
+   const [topRated, setTopRated] = useState<MovieCompact[]>([]);
+   const [loading, setLoading] = useState(true);
+@@ -25,9 +25,9 @@ export default function HomePage() {
+           moviesAPI.topRated(),
+         ]);
+ 
+-        if (trendRes.status === "fulfilled") setTrending(trendRes.value);
+-        if (npRes.status === "fulfilled") setNowPlaying(npRes.value.results);
+-        if (trRes.status === "fulfilled") setTopRated(trRes.value.results);
++        if (trendRes.status === "fulfilled") setTrending(trendRes.value.results || []);
++        if (npRes.status === "fulfilled") setNowPlaying(npRes.value.results || []);
++        if (trRes.status === "fulfilled") setTopRated(trRes.value.results || []);
+       } catch (err) {
+         console.error("Failed to fetch movies:", err);
+       } finally {
+diff --git a/frontend/src/components/HeroSection.tsx b/frontend/src/components/HeroSection.tsx
+index ccdeeb1..8020cba 100644
+--- a/frontend/src/components/HeroSection.tsx
++++ b/frontend/src/components/HeroSection.tsx
+@@ -5,6 +5,9 @@ import Link from "next/link";
+ import Image from "next/image";
+ import { Play, Info, Star, ChevronLeft, ChevronRight } from "lucide-react";
+ import { backdropUrl, posterUrl } from "@/lib/utils";
++import TrailerModal from "@/components/TrailerModal";
++import { useAuth } from "@/lib/AuthContext";
++import { recommendationsAPI } from "@/lib/api";
+ import type { MovieCompact } from "@/types/movie";
+ 
+ interface HeroSectionProps {
+@@ -14,9 +17,13 @@ interface HeroSectionProps {
+ const SLIDE_DURATION = 3000; 
+ 
+ export default function HeroSection({ movies }: HeroSectionProps) {
++  const { isAuthenticated } = useAuth();
+   const [activeIndex, setActiveIndex] = useState(0);
+   const [isPaused, setIsPaused] = useState(false);
+   const [progressKey, setProgressKey] = useState(0);
++  const [trailerOpen, setTrailerOpen] = useState(false);
++  const [trailerTmdbId, setTrailerTmdbId] = useState<number | null>(null);
++  const [trailerTitle, setTrailerTitle] = useState("");
+ 
+   const heroMovies = movies.slice(0, 6);
+ 
+@@ -146,13 +153,17 @@ export default function HeroSection({ movies }: HeroSectionProps) {
+               <Info className="w-[18px] h-[18px]" />
+               View Details
+             </Link>
+-            <Link
+-              href={`/movie/${movie.tmdb_id || movie.id}`}
++            <button
++              onClick={() => {
++                setTrailerTmdbId(movie.tmdb_id || movie.id);
++                setTrailerTitle(movie.title);
++                setTrailerOpen(true);
++              }}
+               className="flex items-center gap-2 px-6 py-3.5 rounded-xl glass-card text-sm font-medium text-white/80 hover:text-white transition-all duration-300 hover:scale-[1.02]"
+             >
+               <Play className="w-4 h-4" fill="currentColor" />
+               Trailer
+-            </Link>
++            </button>
+           </div>
+         </div>
+       </div>
+@@ -225,6 +236,22 @@ export default function HeroSection({ movies }: HeroSectionProps) {
+           );
+         })}
+       </div>
++
++      <TrailerModal
++        open={trailerOpen}
++        onClose={() => setTrailerOpen(false)}
++        tmdbId={trailerTmdbId}
++        movieTitle={trailerTitle}
++        onTrailerPlay={() => {
++          if (isAuthenticated && trailerTmdbId) {
++            recommendationsAPI.trackInteraction({
++              movie_tmdb_id: trailerTmdbId,
++              movie_title: trailerTitle,
++              interaction_type: "watched",
++            }).catch(() => {});
++          }
++        }}
++      />
+     </div>
+   );
+ }
+diff --git a/frontend/src/components/MovieCard.tsx b/frontend/src/components/MovieCard.tsx
+index 500bc1f..e876cad 100644
+--- a/frontend/src/components/MovieCard.tsx
++++ b/frontend/src/components/MovieCard.tsx
+@@ -2,8 +2,8 @@
+ 
+ import Link from "next/link";
+ import Image from "next/image";
+-import { Star, Clock, Play, Heart, Bookmark, TrendingUp, ArrowRight } from "lucide-react";
+-import { posterUrl, formatRuntime, ratingColor, cn, formatCurrency } from "@/lib/utils";
++import { Star, Clock, Play } from "lucide-react";
++import { posterUrl, formatRuntime, ratingColor } from "@/lib/utils";
+ import type { MovieCompact } from "@/types/movie";
+ 
+ interface MovieCardProps {
+diff --git a/frontend/src/components/MovieCarousel.tsx b/frontend/src/components/MovieCarousel.tsx
+index 0bcc963..c6edf71 100644
+--- a/frontend/src/components/MovieCarousel.tsx
++++ b/frontend/src/components/MovieCarousel.tsx
+@@ -2,17 +2,10 @@
+ 
+ import { useRef } from "react";
+ import Link from "next/link";
+-import { ChevronLeft, ChevronRight, ArrowRight, Star, Clock, Film } from "lucide-react";
++import { ChevronLeft, ChevronRight, ArrowRight } from "lucide-react";
+ import MovieCard, { MovieCardSkeleton } from "@/components/MovieCard";
+ import type { MovieCompact } from "@/types/movie";
+ 
+-function formatMovieRuntime(minutes: number | null): string {
+-  if (!minutes) return "";
+-  const h = Math.floor(minutes / 60);
+-  const m = minutes % 60;
+-  return h > 0 ? `${h}h ${m}m` : `${m}m`;
+-}
+-
+ interface MovieCarouselProps {
+   title: string;
+   subtitle?: string;
