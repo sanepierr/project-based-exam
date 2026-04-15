@@ -284,6 +284,7 @@ export default function DashboardPage() {
                     <Link
                       href={`/movie/${item.movie_tmdb_id}`}
                       className="text-sm text-white/70 hover:text-gold truncate transition-colors"
+                      title="View movie details"
                     >
                       {item.movie_title}
                     </Link>
