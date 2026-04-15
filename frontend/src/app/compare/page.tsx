@@ -328,6 +328,27 @@ function CompareContent() {
           <div className="h-px bg-gradient-to-r from-transparent via-gold/15 to-transparent mb-6" />
 
           <h2 className="text-xl font-bold font-display text-center mb-6">Head to Head</h2>
+            <button
+              type="button"
+              onClick={async () => {
+                try {
+                  await navigator.clipboard.writeText(window.location.href);
+                  setCopied(true);
+                  setTimeout(() => setCopied(false), 2000);
+                } catch {
+                  /* ignore */
+                }
+              }}
+              className="inline-flex items-center justify-center gap-2 h-9 px-3 rounded-xl glass-card text-xs text-white/70 hover:text-white mx-auto sm:mx-0"
+            >
+              {copied ? (
+                <Check className="w-3.5 h-3.5 text-emerald-400" />
+              ) : (
+                <Link2 className="w-3.5 h-3.5" />
+              )}
+              {copied ? "Copied" : "Copy comparison link"}
+            </button>
+          </div>
 
           <CompareBar label="Rating" valueA={movieA.vote_average} valueB={movieB.vote_average} higher="higher" />
           <CompareBar label="Vote Count" valueA={movieA.vote_count} valueB={movieB.vote_count} higher="higher" />
