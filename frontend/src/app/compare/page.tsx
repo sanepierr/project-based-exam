@@ -6,7 +6,7 @@ import {
   Search, ArrowLeftRight, Loader2, X, Link2, Check, ArrowDownUp,
 } from "lucide-react";
 import { moviesAPI } from "@/lib/api";
-import { posterUrl, formatRuntime, formatCurrency, ratingColor } from "@/lib/utils";
+import { posterUrl, formatRuntime, formatCurrency } from "@/lib/utils";
 import type { MovieCompact } from "@/types/movie";
 
 function CompareContent() {
