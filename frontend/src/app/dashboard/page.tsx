@@ -154,7 +154,7 @@ export default function DashboardPage() {
       {/* Statistics cards */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 mb-10">
         {statCards.map(({ label, value, icon: Icon, color, bg }) => (
-          <div key={label} className="glass-card rounded-xl p-5 relative overflow-hidden">
+          <div key={label} className="glass-card rounded-xl p-5 relative overflow-hidden hover:-translate-y-1 hover:shadow-lg transition-transform duration-300">
             <div className={`absolute inset-0 bg-gradient-to-br ${bg}`} />
             <div className="relative z-10">
               <Icon className={`w-5 h-5 ${color} mb-3`} />
