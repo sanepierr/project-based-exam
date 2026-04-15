@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, Suspense } from "react";
+import { useState, useEffect, useRef, useCallback, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import {
@@ -170,6 +170,58 @@ function MoodContent() {
   const [showAnalytics, setShowAnalytics] = useState(false);
   const [suggestedMood, setSuggestedMood] = useState<string | null>(null);
 
+  const fetchMoodMovies = useCallback(
+    async (slug: string, p: number, sort?: string, append = false) => {
+      setLoading(true);
+      setError(null);
+      try {
+        const data = await moviesAPI.getMoodMovies(slug, p, sort || sortBy);
+        const resolvedResults = data.results || [];
+        let nextMovies: MovieCompact[] = [];
+        setMovies((prev) => {
+          nextMovies = append ? [...prev, ...resolvedResults] : resolvedResults;
+          return nextMovies;
+        });
+
+        setMoodInfo(data.mood);
+        setTotalPages(data.total_pages || 1);
+        setTotalResults(data.total_results || 0);
+        setPage(p);
+
+        const averageRating = nextMovies.length
+          ? nextMovies.reduce(
+              (sum: number, movie: MovieCompact) => sum + movie.vote_average,
+              0
+            ) / nextMovies.length
+          : 0;
+        const genreCounts: Record<string, number> = {};
+        nextMovies.forEach((movie: MovieCompact) => {
+          movie.genres?.forEach((genre) => {
+            genreCounts[genre.name] = (genreCounts[genre.name] || 0) + 1;
+          });
+        });
+        const topGenres = Object.entries(genreCounts)
+          .sort((a, b) => b[1] - a[1])
+          .slice(0, 3)
+          .map(([name]) => name);
+        setStats({ averageRating: Number(averageRating.toFixed(1)), topGenres });
+
+        setVirtualScroll(nextMovies.length > 100);
+      } catch (err: unknown) {
+        console.error(err);
+        const message =
+          err instanceof Error
+            ? err.message
+            : "Failed to load movies. Please try again.";
+        setError(message);
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      } finally {
+        setLoading(false);
+      }
+    },
+    [sortBy]
+  );
+
   useEffect(() => {
     if (!activeMood) return;
     setIsTransitioning(true);
@@ -182,7 +234,7 @@ function MoodContent() {
     const recommendedSlugs = MOOD_RECOMMENDATIONS[activeMood] || [];
     setRecommended(MOODS.filter((m) => recommendedSlugs.includes(m.slug)));
     setTimeout(() => setIsTransitioning(false), 300);
-  }, [activeMood]);
+  }, [activeMood, fetchMoodMovies]);
 
   useEffect(() => {
     const mood = MOODS.find(m => m.slug === activeMood);
@@ -289,51 +341,6 @@ function MoodContent() {
   useEffect(() => {
     setSuggestedMood(getSuggestedMoodByTime());
   }, []);
-
-  async function fetchMoodMovies(slug: string, p: number, sort?: string, append = false) {
-    setLoading(true);
-    setError(null);
-    try {
-      const data = await moviesAPI.getMoodMovies(slug, p, sort || sortBy);
-      const nextMovies = append ? [...movies, ...(data.results || [])] : (data.results || []);
-      setMovies(nextMovies);
-      setMoodInfo(data.mood);
-      setTotalPages(data.total_pages || 1);
-      setTotalResults(data.total_results || 0);
-      setPage(p);
-
-      const averageRating = nextMovies.length
-        ? nextMovies.reduce(
-            (sum: number, movie: MovieCompact) => sum + movie.vote_average,
-            0
-          ) / nextMovies.length
-        : 0;
-      const genreCounts: Record<string, number> = {};
-      nextMovies.forEach((movie: MovieCompact) => {
-        movie.genres?.forEach((genre) => {
-          genreCounts[genre.name] = (genreCounts[genre.name] || 0) + 1;
-        });
-      });
-      const topGenres = Object.entries(genreCounts)
-        .sort((a, b) => b[1] - a[1])
-        .slice(0, 3)
-        .map(([name]) => name);
-      setStats({ averageRating: Number(averageRating.toFixed(1)), topGenres });
-
-      // Enable virtual scroll for large result sets
-      setVirtualScroll(nextMovies.length > 100);
-    } catch (err: unknown) {
-      console.error(err);
-      const message =
-        err instanceof Error
-          ? err.message
-          : "Failed to load movies. Please try again.";
-      setError(message);
-      window.scrollTo({ top: 0, behavior: "smooth" });
-    } finally {
-      setLoading(false);
-    }
-  }
 
   function handleQuizAnswer(answer: string) {
     const newAnswers = [...quizAnswers, answer];
