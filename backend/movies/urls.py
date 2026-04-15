@@ -20,5 +20,11 @@ urlpatterns = [
     path("moods/<str:mood_slug>/", views.mood_movies, name="mood-movies"),
     path("discover/", views.discover_filtered, name="discover-filtered"),
     path("compare/", views.compare_movies, name="compare-movies"),
+    path("collections/", views.curated_collection_list, name="curated-collections"),
+    path(
+        "collections/<slug>/",
+        views.curated_collection_detail,
+        name="curated-collection-detail",
+    ),
     path("", include(router.urls)),
 ]
