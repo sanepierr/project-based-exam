@@ -509,16 +509,18 @@ function SearchContent() {
               <button
                 onClick={() => handlePageChange(page - 1)}
                 disabled={page <= 1}
+                aria-label="Previous page"
                 className="px-5 py-2.5 rounded-xl glass-card text-sm font-medium disabled:opacity-20 hover:border-gold/15 transition-all"
               >
                 Previous
               </button>
-              <span className="text-sm text-white/30 font-mono tabular-nums px-4">
+              <span aria-live="polite" className="text-sm text-white/30 font-mono tabular-nums px-4">
                 {page} / {totalPages}
               </span>
               <button
                 onClick={() => handlePageChange(page + 1)}
                 disabled={page >= totalPages}
+                aria-label="Next page"
                 className="px-5 py-2.5 rounded-xl glass-card text-sm font-medium disabled:opacity-20 hover:border-gold/15 transition-all"
               >
                 Next
