@@ -46,7 +46,13 @@ Copy the root [`.env.example`](./.env.example) to `backend/.env` and set values 
 - `DATABASE_URL` — optional locally (defaults to SQLite); use Postgres in production
 - `CORS_ORIGINS` — include your Next.js origin(s)
 
-The frontend uses `NEXT_PUBLIC_API_URL` (e.g. `http://localhost:8000/api`) so the browser calls the correct API base URL.
+The frontend uses `NEXT_PUBLIC_API_URL` (e.g. `http://localhost:8000/api`) so the browser calls the correct API base URL. See [`frontend/.env.example`](./frontend/.env.example) for a frontend-only template.
+
+### Deploying the frontend (e.g. Vercel)
+
+- Set **Root Directory** to `frontend` (or equivalent in your host).
+- Add **`NEXT_PUBLIC_API_URL`** to your production (and preview, if needed) environment, pointing at your deployed API (for example `https://your-api.example.com/api`).
+- On the Django side, add your Vercel app origin(s) to **`CORS_ORIGINS`** (production URL and preview URLs if the browser calls the API from those hosts).
 
 ## Deployment (backend)
 
