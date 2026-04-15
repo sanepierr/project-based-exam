@@ -86,7 +86,7 @@ function GenreContent() {
         <ArrowLeft className="w-4 h-4" /> All Genres
       </Link>
 
-      <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-8">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-5 mb-8">
         <h1 className="text-3xl font-bold font-display">{genreName} Movies</h1>
         <div className="flex flex-wrap items-center gap-3">
           <label className="text-xs text-white/35 uppercase tracking-wider font-semibold">
