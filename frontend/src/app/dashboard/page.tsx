@@ -241,11 +241,11 @@ export default function DashboardPage() {
               return (
                 <div
                   key={day.date}
-                  className="flex-1 group relative"
+                  className="flex-1 group relative cursor-pointer"
                   title={`${day.date}: ${day.count} interactions`}
                 >
                   <div
-                    className="w-full bg-gradient-to-t from-gold/50 to-gold/20 rounded-t transition-all hover:from-gold/70 hover:to-gold/40"
+                    className="w-full bg-gradient-to-t from-gold/50 to-gold/20 rounded-t transition-all duration-300 group-hover:from-gold/80 group-hover:to-gold/50 group-hover:shadow-[0_0_10px_rgba(234,179,8,0.2)]"
                     style={{ height: `${Math.max(height, 4)}%` }}
                   />
                 </div>
