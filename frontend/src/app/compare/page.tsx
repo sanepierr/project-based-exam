@@ -294,6 +294,21 @@ function CompareContent() {
           <div className="w-12 h-12 rounded-full glass-card flex items-center justify-center">
             <ArrowLeftRight className="w-5 h-5 text-gold/50" />
           </div>
+          {movieA && movieB && (
+            <button
+              type="button"
+              onClick={() => {
+                const t = movieA;
+                setMovieA(movieB);
+                setMovieB(t);
+                replaceCompareUrl(movieB, t);
+              }}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-white/[0.08] text-[11px] font-medium text-white/50 hover:text-gold hover:border-gold/25 transition-colors"
+            >
+              <ArrowDownUp className="w-3.5 h-3.5" />
+              Swap
+            </button>
+          )}
         </div>
 
         <MovieSelector
