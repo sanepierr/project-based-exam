@@ -141,6 +141,7 @@ export default function DashboardPage() {
         </div>
         <button
           type="button"
+          aria-label="Refresh Dashboard"
           onClick={() => fetchDashboard()}
           className="hidden sm:inline-flex items-center gap-2 h-10 px-4 rounded-xl glass-card text-xs font-medium text-white/50 hover:text-white border border-white/[0.06] hover:border-gold/20 transition-all flex-shrink-0"
           title="Refresh stats"
