@@ -25,9 +25,16 @@ describe("MoodPage", () => {
 
   test("renders all mood options", () => {
     render(<MoodPage />);
-    expect(screen.getByText("Cozy Night In")).toBeInTheDocument();
-    expect(screen.getByText("Adrenaline Rush")).toBeInTheDocument();
-    expect(screen.getByText("Feel Good")).toBeInTheDocument();
+    // Use mood grid buttons (aria-label) — labels like "Feel Good" also appear on "Suggested for now".
+    expect(
+      screen.getByRole("button", { name: "Select Cozy Night In" })
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Select Adrenaline Rush" })
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Select Feel Good" })
+    ).toBeInTheDocument();
   });
 
   test("shows surprise me button", () => {
