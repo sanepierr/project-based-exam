@@ -49,10 +49,21 @@ export default function DescribePage() {
 
   const [listening, setListening] = useState(false);
   const [voiceSupported, setVoiceSupported] = useState(false);
+  /** Shown when the mic is visible but disabled (wrong browser or context). */
+  const [voiceUnavailableReason, setVoiceUnavailableReason] = useState<string | null>(null);
   const recognitionRef = useRef<unknown>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    if (!window.isSecureContext) {
+      setVoiceUnavailableReason(
+        "Voice input needs HTTPS (or http://localhost). Open the site over a secure URL."
+      );
+      return;
+    }
+
     const w = window as typeof window & {
       SpeechRecognition?: new () => {
         continuous: boolean;
@@ -76,7 +87,13 @@ export default function DescribePage() {
       };
     };
     const SR = w.SpeechRecognition || w.webkitSpeechRecognition;
-    if (!SR) return;
+    if (!SR) {
+      setVoiceUnavailableReason(
+        "Speech recognition is not available in this browser. Try Chrome or Edge on desktop."
+      );
+      return;
+    }
+    setVoiceUnavailableReason(null);
     setVoiceSupported(true);
     const recognition = new SR();
     recognition.continuous = false;
@@ -99,6 +116,7 @@ export default function DescribePage() {
   }, []);
 
   const toggleVoice = useCallback(() => {
+    if (!voiceSupported) return;
     const rec = recognitionRef.current as { stop: () => void; start: () => void } | null;
     if (!rec) return;
     if (listening) {
@@ -109,7 +127,7 @@ export default function DescribePage() {
       rec.start();
       setListening(true);
     }
-  }, [listening]);
+  }, [listening, voiceSupported]);
 
   const handleSubmit = useCallback(
     async (desc?: string, p = 1) => {
@@ -192,20 +210,34 @@ export default function DescribePage() {
                 rows={3}
                 className="w-full bg-transparent text-white placeholder:text-white/20 outline-none resize-none text-lg font-body leading-relaxed pr-14"
               />
-              {voiceSupported && (
-                <button
-                  type="button"
-                  onClick={toggleVoice}
-                  className={`absolute top-1 right-1 w-11 h-11 rounded-xl flex items-center justify-center transition-all duration-300 ${
-                    listening
+              <button
+                type="button"
+                disabled={!voiceSupported}
+                onClick={toggleVoice}
+                aria-label={
+                  !voiceSupported
+                    ? voiceUnavailableReason || "Voice input not available"
+                    : listening
+                      ? "Stop listening"
+                      : "Speak your description"
+                }
+                className={`absolute top-1 right-1 w-11 h-11 rounded-xl flex items-center justify-center transition-all duration-300 ${
+                  !voiceSupported
+                    ? "cursor-not-allowed opacity-40 bg-white/[0.02] border border-white/[0.06] text-white/25"
+                    : listening
                       ? "bg-red-500/20 border border-red-500/40 text-red-400 animate-pulse"
                       : "bg-white/[0.04] border border-white/[0.08] text-white/40 hover:text-gold hover:border-gold/20"
-                  }`}
-                  title={listening ? "Stop listening" : "Speak your description"}
-                >
-                  {listening ? <MicOff className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
-                </button>
-              )}
+                }`}
+                title={
+                  !voiceSupported
+                    ? voiceUnavailableReason || "Voice input not available"
+                    : listening
+                      ? "Stop listening"
+                      : "Speak your description"
+                }
+              >
+                {listening ? <MicOff className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
+              </button>
             </div>
 
             {listening && (
@@ -216,7 +248,7 @@ export default function DescribePage() {
                       key={i}
                       className="w-1 bg-red-400 rounded-full animate-pulse"
                       style={{
-                        height: `${8 + Math.random() * 14}px`,
+                        height: `${10 + (i % 3) * 5}px`,
                         animationDelay: `${i * 120}ms`,
                       }}
                     />
@@ -230,13 +262,13 @@ export default function DescribePage() {
               <div className="flex items-center gap-2 text-[11px] text-white/20">
                 <Search className="w-3.5 h-3.5" />
                 <span>Comma-separate multiple terms</span>
-                {voiceSupported && (
-                  <>
-                    <span className="text-white/10">|</span>
-                    <Mic className="w-3.5 h-3.5" />
-                    <span>Or use voice</span>
-                  </>
-                )}
+                <span className="text-white/10">|</span>
+                <Mic className="w-3.5 h-3.5" />
+                <span>
+                  {voiceSupported
+                    ? "Or tap the mic to speak"
+                    : voiceUnavailableReason || "Voice needs Chrome/Edge (desktop)"}
+                </span>
               </div>
               <button
                 type="button"
